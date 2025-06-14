@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -11,17 +11,18 @@
 !.yarn/versions
 
 # testing
-/coverage
+/coverage/
 
 # next.js
 /.next/
 /out/
 
 # production
-/build
+/build/
 
 # misc
 .DS_Store
+Thumbs.db
 *.pem
 
 # debug
@@ -31,11 +32,36 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env*
+.env
 
 # vercel
-.vercel
+.vercel/
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local IDE settings
+.vscode/
+.idea/
+
+# Windows
+*.lnk
+
+# logs
+logs
+*.log
+
+# Optional: OS generated files
+Desktop.ini
+$RECYCLE.BIN/
+
+# Optional: Mac system files
+.AppleDouble
+.LSOverride
+
+# Optional: npm cache
+.npm
+
+# Optional: yarn cache
+.yarn/cache/
