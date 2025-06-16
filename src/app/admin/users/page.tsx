@@ -62,7 +62,7 @@ function StatCard({ title, value, icon: Icon, color, change, isLoading }: {
   const isPositive = change?.startsWith('+');
   
   return (
-    <Card className="bg-white rounded-2xl border-0 shadow-sm hover:shadow-md transition-all duration-200">
+    <Card className="bg-white dark:bg-gray-800 rounded-2xl border-0 shadow-sm hover:shadow-md transition-all duration-200">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="p-3 rounded-xl" style={{ backgroundColor: `${color}15` }}>
@@ -76,11 +76,11 @@ function StatCard({ title, value, icon: Icon, color, change, isLoading }: {
           )}
         </div>
         <div>
-          <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-          <div className="text-3xl font-bold text-slate-900 mb-1">
+          <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{title}</p>
+          <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
             {isLoading ? <Skeleton className="h-8 w-24" /> : value}
           </div>
-          <p className="text-xs text-slate-400">Registered users</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">Registered users</p>
         </div>
       </CardContent>
     </Card>
@@ -184,8 +184,8 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">User Management</h1>
-          <p className="text-slate-600 text-lg">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">User Management</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-lg">
             Oversee user accounts, manage permissions, and monitor activity.
           </p>
         </div>
@@ -248,10 +248,10 @@ export default function UsersPage() {
       </div>
 
       {/* Filters & Table */}
-      <Card className="bg-white rounded-2xl border-0 shadow-sm hover:shadow-md transition-all duration-200">
+      <Card className="bg-white dark:bg-gray-800 rounded-2xl border-0 shadow-sm hover:shadow-md transition-all duration-200">
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
-            <CardTitle className="flex items-center text-slate-900 text-xl">
+            <CardTitle className="flex items-center text-gray-900 dark:text-white text-xl">
               <Users className="mr-3 h-6 w-6 text-[#69C0DC]" />
               User Directory
             </CardTitle>
@@ -262,13 +262,13 @@ export default function UsersPage() {
                   placeholder="Search users..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-10 bg-white border-slate-200 rounded-xl"
+                  className="pl-10 bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 />
               </div>
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="px-3 py-2 border border-slate-200 bg-white rounded-xl text-sm focus:border-[#69C0DC] focus:ring-[#69C0DC] min-w-[120px]"
+                className="px-3 py-2 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:border-[#69C0DC] focus:ring-[#69C0DC] min-w-[120px]"
               >
                 <option value="all">All Roles</option>
                 <option value="USER">User</option>
@@ -278,7 +278,7 @@ export default function UsersPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border border-slate-200 bg-white rounded-xl text-sm focus:border-[#69C0DC] focus:ring-[#69C0DC] min-w-[120px]"
+                className="px-3 py-2 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 rounded-xl text-sm text-gray-900 dark:text-white focus:border-[#69C0DC] focus:ring-[#69C0DC] min-w-[120px]"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
@@ -288,16 +288,16 @@ export default function UsersPage() {
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="overflow-hidden rounded-xl border border-slate-200">
+          <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-600">
             <Table>
-              <TableHeader className="bg-slate-50">
-                <TableRow className="hover:bg-slate-100">
-                  <TableHead className="font-medium text-slate-700">User</TableHead>
-                  <TableHead className="font-medium text-slate-700">Role</TableHead>
-                  <TableHead className="font-medium text-slate-700">Status</TableHead>
-                  <TableHead className="font-medium text-slate-700">Last Active</TableHead>
-                  <TableHead className="font-medium text-slate-700">Joined</TableHead>
-                  <TableHead className="text-right font-medium text-slate-700">Actions</TableHead>
+              <TableHeader className="bg-gray-50 dark:bg-gray-700">
+                <TableRow className="hover:bg-gray-100 dark:hover:bg-gray-600">
+                  <TableHead className="font-medium text-gray-700 dark:text-gray-300">User</TableHead>
+                  <TableHead className="font-medium text-gray-700 dark:text-gray-300">Role</TableHead>
+                  <TableHead className="font-medium text-gray-700 dark:text-gray-300">Status</TableHead>
+                  <TableHead className="font-medium text-gray-700 dark:text-gray-300">Last Active</TableHead>
+                  <TableHead className="font-medium text-gray-700 dark:text-gray-300">Joined</TableHead>
+                  <TableHead className="text-right font-medium text-gray-700 dark:text-gray-300">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

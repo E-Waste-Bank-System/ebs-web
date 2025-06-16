@@ -79,22 +79,22 @@ function StatCard({
   trend?: string; 
 }) {
   return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-gradient-to-br from-slate-50 to-slate-100/50">
+    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-800">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-600">{title}</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
             <div className="flex items-baseline space-x-2">
-              <p className="text-2xl font-bold text-slate-900">{value}</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
               {trend && (
-                <span className="text-sm font-medium text-green-600">
+                <span className="text-sm font-medium text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
                   {trend}
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500">{subtitle}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-500">{subtitle}</p>
           </div>
-          <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
+          <div className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg`}>
             <Icon className="h-6 w-6 text-white" />
           </div>
         </div>
@@ -108,7 +108,7 @@ const getStatusColor = (status: string) => {
     case 'published':
       return 'bg-green-100 text-green-800 border-green-200';
     case 'draft':
-      return 'bg-gray-100 text-gray-800 border-gray-200';
+      return 'bg-amber-100 text-amber-800 border-amber-200';
     case 'archived':
       return 'bg-red-100 text-red-800 border-red-200';
     default:
@@ -121,7 +121,7 @@ const getStatusIcon = (status: string) => {
     case 'published':
       return <CheckCircle className="h-4 w-4 text-green-500" />;
     case 'draft':
-      return <Edit className="h-4 w-4 text-gray-500" />;
+      return <Edit className="h-4 w-4 text-amber-500" />;
     case 'archived':
       return <AlertCircle className="h-4 w-4 text-red-500" />;
     default:
@@ -229,12 +229,14 @@ export default function ArticlesPage() {
     return (
       <div className="p-6 space-y-8 bg-gradient-to-br from-slate-50 via-white to-slate-50 min-h-screen">
         <div className="flex items-center justify-center min-h-[400px]">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-8 text-center">
-              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load articles</h3>
-              <p className="text-gray-600 mb-4">There was an error loading the articles. Please try again.</p>
-              <Button onClick={() => refetch()} variant="outline">
+          <Card className="border-0 shadow-lg bg-white">
+            <CardContent className="p-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="h-8 w-8 text-red-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Failed to load articles</h3>
+              <p className="text-gray-600 mb-6 max-w-sm">There was an error loading the articles. Please try again.</p>
+              <Button onClick={() => refetch()} className="bg-[#69C0DC] hover:bg-[#5BA8C4]">
                 Try Again
               </Button>
             </CardContent>
@@ -245,15 +247,15 @@ export default function ArticlesPage() {
   }
 
   return (
-    <div className="p-6 space-y-8 bg-gradient-to-br from-slate-50 via-white to-slate-50 min-h-screen">
+    <div className="p-6 space-y-8 min-h-screen">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900">Content Management</h1>
-          <p className="text-gray-600 mt-2">Create, manage, and publish articles about e-waste and sustainability.</p>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-6 lg:space-y-0">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Content Management</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">Create, manage, and publish articles about e-waste and sustainability.</p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button variant="outline" className="rounded-xl">
+          <Button variant="outline" className="rounded-xl border-gray-200 hover:border-gray-300">
             <Download className="h-4 w-4 mr-2" />
             Export Articles
           </Button>
@@ -271,7 +273,7 @@ export default function ArticlesPage() {
         <StatCard
           title="Total Articles"
           value={totalArticles.toString()}
-          subtitle="All content"
+          subtitle="All content pieces"
           icon={FileText}
           color="from-[#69C0DC] to-[#5BA8C4]"
         />
@@ -285,7 +287,7 @@ export default function ArticlesPage() {
         <StatCard
           title="Total Views"
           value={totalViews.toLocaleString()}
-          subtitle="All time"
+          subtitle="All time readers"
           icon={Eye}
           color="from-purple-500 to-purple-600"
         />
@@ -294,23 +296,25 @@ export default function ArticlesPage() {
           value={draftArticles.toString()}
           subtitle="Pending review"
           icon={Edit}
-          color="from-orange-500 to-orange-600"
+          color="from-amber-500 to-amber-600"
         />
       </div>
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:grid-cols-3 rounded-xl">
-          <TabsTrigger value="articles" className="rounded-lg">All Articles</TabsTrigger>
-          <TabsTrigger value="analytics" className="rounded-lg">Analytics</TabsTrigger>
-          <TabsTrigger value="media" className="rounded-lg">Media Library</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-6 sm:space-y-0">
+          <TabsList className="grid w-full sm:w-auto grid-cols-3 rounded-xl bg-gray-100 shadow-sm border">
+            <TabsTrigger value="articles" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">All Articles</TabsTrigger>
+            <TabsTrigger value="analytics" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">Analytics</TabsTrigger>
+            <TabsTrigger value="media" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">Media Library</TabsTrigger>
+          </TabsList>
+        </div>
 
-        <TabsContent value="articles" className="space-y-6">
+        <TabsContent value="articles" className="space-y-8">
           {/* Filters */}
-          <Card className="border-0 shadow-sm">
+          <Card className="border-0 shadow-sm bg-white">
             <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-6 lg:space-y-0">
                 <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -318,11 +322,11 @@ export default function ArticlesPage() {
                       placeholder="Search articles..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 w-full sm:w-80 rounded-xl"
+                      className="pl-10 w-full sm:w-80 rounded-xl border-gray-200 focus:border-[#69C0DC] focus:ring-[#69C0DC]"
                     />
                   </div>
                   <Select value={statusFilter} onValueChange={(value: 'draft' | 'published' | 'archived' | 'all') => setStatusFilter(value)}>
-                    <SelectTrigger className="w-full sm:w-40 rounded-xl">
+                    <SelectTrigger className="w-full sm:w-40 rounded-xl border-gray-200">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
@@ -336,11 +340,11 @@ export default function ArticlesPage() {
                     placeholder="Filter by tag..."
                     value={tagFilter}
                     onChange={(e) => setTagFilter(e.target.value)}
-                    className="w-full sm:w-40 rounded-xl"
+                    className="w-full sm:w-40 rounded-xl border-gray-200 focus:border-[#69C0DC] focus:ring-[#69C0DC]"
                   />
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" className="rounded-xl">
+                  <Button variant="outline" size="sm" className="rounded-xl border-gray-200">
                     <Filter className="h-4 w-4 mr-2" />
                     More Filters
                   </Button>
@@ -351,15 +355,15 @@ export default function ArticlesPage() {
 
           {/* Loading State */}
           {isLoading && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
               {[...Array(6)].map((_, i) => (
-                <Card key={i} className="border-0 shadow-sm">
-                  <div className="aspect-video bg-gray-200 rounded-t-xl animate-pulse" />
+                <Card key={i} className="border-0 shadow-sm bg-white dark:bg-gray-800 overflow-hidden">
+                  <div className="aspect-video bg-gray-200 dark:bg-gray-600 animate-pulse" />
                   <CardContent className="p-6 space-y-4">
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-6 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
+                    <div className="space-y-3">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse" />
+                      <div className="h-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse" />
+                      <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-3/4" />
                     </div>
                   </CardContent>
                 </Card>
@@ -369,68 +373,70 @@ export default function ArticlesPage() {
 
           {/* Articles Grid */}
           {!isLoading && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
               {articles.map((article) => (
-                <Card key={article.id} className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group">
+                <Card key={article.id} className="border-0 shadow-sm hover:shadow-xl transition-all duration-300 group bg-white dark:bg-gray-800 overflow-hidden">
                   <div className="relative">
-                    <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-xl flex items-center justify-center">
+                    <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center">
                       {article.featured_image ? (
                         <img 
                           src={article.featured_image} 
                           alt={article.title}
-                          className="w-full h-full object-cover rounded-t-xl"
+                          className="w-full h-full object-cover"
                         />
                       ) : (
-                        <ImageIcon className="h-12 w-12 text-gray-400" />
+                        <div className="bg-gradient-to-br from-[#69C0DC]/10 to-[#5BA8C4]/10 w-full h-full flex items-center justify-center">
+                          <ImageIcon className="h-12 w-12 text-[#69C0DC]/40" />
+                        </div>
                       )}
                     </div>
-                    <Badge className={`absolute top-3 right-3 ${getStatusColor(article.status)} rounded-full px-3 py-1`}>
+                    <Badge className={`absolute top-4 right-4 ${getStatusColor(article.status)} border shadow-sm`}>
                       <div className="flex items-center space-x-1">
                         {getStatusIcon(article.status)}
-                        <span className="capitalize">{article.status}</span>
+                        <span className="capitalize font-medium">{article.status}</span>
                       </div>
                     </Badge>
                   </div>
                   
-                  <CardContent className="p-6 space-y-4">
-                    <div className="space-y-2">
-                      <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 group-hover:text-[#69C0DC] transition-colors">
+                  <CardContent className="p-6 space-y-5">
+                    <div className="space-y-3">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white line-clamp-2 group-hover:text-[#69C0DC] transition-colors leading-tight">
                         {article.title}
                       </h3>
                       {article.excerpt && (
-                        <p className="text-sm text-gray-600 line-clamp-3">{article.excerpt}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">{article.excerpt}</p>
                       )}
                     </div>
 
                     {article.tags && article.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2">
                         {article.tags.slice(0, 3).map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs rounded-full px-2 py-1">
+                          <Badge key={index} variant="secondary" className="text-xs rounded-full px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                             <Tag className="h-3 w-3 mr-1" />
                             {tag}
                           </Badge>
                         ))}
                         {article.tags.length > 3 && (
-                          <Badge variant="secondary" className="text-xs rounded-full px-2 py-1">
+                          <Badge variant="secondary" className="text-xs rounded-full px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
                             +{article.tags.length - 3} more
                           </Badge>
                         )}
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
                       <div className="flex items-center space-x-3">
-                        <Avatar className="h-8 w-8">
+                        <Avatar className="h-9 w-9 ring-2 ring-gray-100 dark:ring-gray-700">
                           <AvatarImage src={article.author?.avatar_url} />
-                          <AvatarFallback className="bg-[#69C0DC] text-white text-xs">
+                          <AvatarFallback className="bg-[#69C0DC] text-white text-sm font-medium">
                             {getAuthorInitials(article.author?.full_name || profile?.full_name)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
                             {article.author?.full_name || profile?.full_name || 'Unknown Author'}
                           </p>
-                          <p className="text-xs text-gray-500 flex items-center">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center mt-1">
                             <Calendar className="h-3 w-3 mr-1" />
                             {article.published_at ? 
                               `Published ${formatDate(article.published_at)}` : 
@@ -444,41 +450,38 @@ export default function ArticlesPage() {
                     {article.status === 'published' && (
                       <div className="flex items-center justify-between text-sm text-gray-500 pt-2">
                         <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-1">
+                          <div className="flex items-center space-x-1 bg-gray-50 dark:bg-gray-700 px-3 py-1 rounded-full">
                             <Eye className="h-4 w-4" />
-                            <span>{article.view_count?.toLocaleString() || 0}</span>
+                            <span className="font-medium">{article.view_count?.toLocaleString() || 0}</span>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between pt-4">
-                      <div className="flex items-center space-x-2">
-                        <Link href={`/admin/articles/edit/${article.id}`}>
-                          <Button variant="outline" size="sm" className="rounded-xl">
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
-                        </Link>
-                       
-                      </div>
+                    <div className="flex items-center justify-between pt-4 space-x-3">
+                      <Link href={`/admin/articles/edit/${article.id}`} className="flex-1">
+                        <Button variant="outline" size="sm" className="w-full rounded-xl border-gray-200 dark:border-gray-600 hover:border-[#69C0DC] hover:text-[#69C0DC] dark:text-gray-300 dark:hover:text-[#69C0DC]">
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                      </Link>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="rounded-xl">
+                          <Button variant="ghost" size="sm" className="rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="rounded-xl">
-                          <DropdownMenuItem>
+                        <DropdownMenuContent className="rounded-xl shadow-lg border-gray-200">
+                          <DropdownMenuItem className="rounded-lg">
                             <Share2 className="mr-2 h-4 w-4" />
                             Share
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem className="rounded-lg">
                             <Download className="mr-2 h-4 w-4" />
                             Export
                           </DropdownMenuItem>
                           <DropdownMenuItem 
-                            className="text-red-600"
+                            className="text-red-600 rounded-lg hover:bg-red-50"
                             onClick={() => handleDeleteArticle(article.id)}
                             disabled={deleteArticleMutation.isPending}
                           >
@@ -496,18 +499,20 @@ export default function ArticlesPage() {
 
           {/* Empty State */}
           {!isLoading && articles.length === 0 && (
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-12 text-center">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No articles found</h3>
-                <p className="text-gray-600 mb-4">
+            <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
+              <CardContent className="p-16 text-center">
+                <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                  <FileText className="h-10 w-10 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">No articles found</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
                   {searchTerm || statusFilter || tagFilter ? 
-                    'No articles match your current filters.' : 
-                    'Get started by creating your first article.'
+                    'No articles match your current filters. Try adjusting your search criteria.' : 
+                    'Get started by creating your first article to share knowledge about e-waste and sustainability.'
                   }
                 </p>
                 <Link href="/admin/articles/create">
-                  <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4]">
+                  <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl shadow-lg">
                     <Plus className="h-4 w-4 mr-2" />
                     Create Article
                   </Button>
@@ -518,24 +523,28 @@ export default function ArticlesPage() {
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-12 text-center">
-              <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Analytics Coming Soon</h3>
-              <p className="text-gray-600">
-                Detailed analytics and insights for your articles will be available here.
+          <Card className="border-0 shadow-lg bg-white">
+            <CardContent className="p-16 text-center">
+              <div className="w-20 h-20 mx-auto mb-6 bg-purple-100 rounded-full flex items-center justify-center">
+                <BarChart3 className="h-10 w-10 text-purple-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Analytics Coming Soon</h3>
+              <p className="text-gray-600 max-w-md mx-auto">
+                Detailed analytics and insights for your articles will be available here. Track views, engagement, and performance metrics.
               </p>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="media" className="space-y-6">
-          <Card className="border-0 shadow-sm">
-            <CardContent className="p-12 text-center">
-              <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Media Library Coming Soon</h3>
-              <p className="text-gray-600">
-                Manage your images and media files here.
+          <Card className="border-0 shadow-lg bg-white">
+            <CardContent className="p-16 text-center">
+              <div className="w-20 h-20 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
+                <ImageIcon className="h-10 w-10 text-blue-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Media Library Coming Soon</h3>
+              <p className="text-gray-600 max-w-md mx-auto">
+                Manage your images and media files here. Upload, organize, and optimize your content assets.
               </p>
             </CardContent>
           </Card>

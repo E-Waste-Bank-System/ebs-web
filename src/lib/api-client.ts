@@ -343,9 +343,6 @@ class ApiClient {
   async createScan(formData: FormData) {
     return this.request<Scan>('/scans', {
       method: 'POST',
-      headers: {
-        ...(this.token && { Authorization: `Bearer ${this.token}` }),
-      },
       body: formData,
     });
   }
@@ -368,9 +365,28 @@ class ApiClient {
     return this.request<DetectedObject>(`/objects/${id}`);
   }
 
-  async validateObject(id: string, data: { notes?: string }) {
+  async validateObject(id: string, data: { 
+    notes?: string;
+    corrected_category?: string;
+    corrected_value?: number;
+  }) {
     return this.request<DetectedObject>(`/admin/objects/${id}/validate`, {
       method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async createObject(data: {
+    name: string;
+    category: string;
+    estimated_value: number;
+    scan_id: string;
+    description?: string;
+    risk_level?: number;
+    damage_level?: number;
+  }) {
+    return this.request<DetectedObject>(`/admin/objects`, {
+      method: 'POST',
       body: JSON.stringify(data),
     });
   }

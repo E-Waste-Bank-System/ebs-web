@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useDashboardStats, useObjectStats, useRecentActivity } from '@/lib/queries';
+import { useAuth } from '@/lib/auth-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,8 +27,26 @@ import {
   Target,
   Loader2
 } from 'lucide-react';
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import React from 'react';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
+
+// Client-only chart component
+const ClientOnlyChart = dynamic(
+  () => Promise.resolve(({ children }: { children: React.ReactNode }) => <>{children}</>),
+  { ssr: false }
+);
+
+// Client-only chart component
+const EmptyChart = dynamic(() => import('@/components/charts/empty-chart'), {
+  ssr: false,
+});
+
+// Client-only chart component
+const CategoryChart = dynamic(() => import('@/components/charts/category-chart'), {
+  ssr: false,
+});
 
 // Component for individual stat cards
 function StatCard({ 
@@ -48,32 +67,32 @@ function StatCard({
   isLoading?: boolean;
 }) {
   if (isLoading) {
-    return (
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-slate-50 to-slate-100/50">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2 flex-1">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-20" />
-              <div className="h-8 bg-gray-200 rounded animate-pulse w-16" />
-              <div className="h-3 bg-gray-200 rounded animate-pulse w-12" />
-            </div>
-            <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
-              <Icon className="h-6 w-6 text-white" />
-            </div>
+      return (
+    <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2 flex-1">
+            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20" />
+            <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-16" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-12" />
           </div>
-        </CardContent>
-      </Card>
-    );
+          <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
+            <Icon className="h-6 w-6 text-white" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
   }
 
   return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-gradient-to-br from-slate-50 to-slate-100/50">
+    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-600">{title}</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
             <div className="flex items-baseline space-x-2">
-              <p className="text-3xl font-bold text-slate-900">{value}</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
               {change && (
                 <div className="flex items-center space-x-1">
                   {changeType === 'increase' ? (
@@ -103,6 +122,8 @@ export default function AdminDashboard() {
   const [timeRange, setTimeRange] = useState('7d');
   const [activeChartTab, setActiveChartTab] = useState('scans');
 
+  const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
+
   // Format currency as Rupiah
   const formatRupiah = (amount: number) => {
     // Handle NaN, null, undefined, or invalid numbers
@@ -115,10 +136,19 @@ export default function AdminDashboard() {
     }).format(validAmount);
   };
 
-  // API queries
-  const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
-  const { data: objectStats, isLoading: objectStatsLoading } = useObjectStats();
-  const { data: recentActivity, isLoading: activityLoading } = useRecentActivity(10);
+  // API queries (only enabled when authenticated and admin)
+  const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats({
+    queryKey: ['dashboard', 'stats'],
+    enabled: isAuthenticated && isAdmin && !authLoading,
+  });
+  const { data: objectStats, isLoading: objectStatsLoading } = useObjectStats({
+    queryKey: ['dashboard', 'objects'],
+    enabled: isAuthenticated && isAdmin && !authLoading,
+  });
+  const { data: recentActivity, isLoading: activityLoading } = useRecentActivity(4, {
+    queryKey: ['dashboard', 'activity', 4],
+    enabled: isAuthenticated && isAdmin && !authLoading,
+  });
 
   // Transform data for charts
   // Create weekly data from recent activity
@@ -166,13 +196,14 @@ export default function AdminDashboard() {
 
   const categoryData = objectStats?.by_category?.map((item: any, index: number) => ({
     name: item.category,
-    value: Math.round((item.count / (objectStats.by_category?.reduce((sum: number, cat: any) => sum + cat.count, 0) || 1)) * 100),
-    count: item.count,
+    value: Math.round((parseInt(item.count) / (objectStats.by_category?.reduce((sum: number, cat: any) => sum + parseInt(cat.count), 0) || 1)) * 100),
+    count: parseInt(item.count),
     color: ['#69C0DC', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#6B7280'][index % 6]
   })) || [];
+  const hasCategoryData = categoryData.some((cat) => cat.count > 0);
 
   return (
-    <div className="p-6 space-y-8 bg-gradient-to-br from-slate-50 via-white to-slate-50 min-h-screen">
+    <div className="p-6 space-y-8 min-h-screen">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
         <div>
@@ -236,12 +267,12 @@ export default function AdminDashboard() {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Weekly Activity */}
-        <Card className="lg:col-span-2 border-0 shadow-sm">
+        <Card className="lg:col-span-2 border-0 shadow-sm bg-white dark:bg-gray-800 rounded-2xl h-[400px]">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl font-bold text-gray-900">Weekly Activity</CardTitle>
-                <CardDescription>Scans and user activity over the past week</CardDescription>
+                <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">Weekly Activity</CardTitle>
+                <CardDescription className="dark:text-gray-400">Scans and user activity over the past week</CardDescription>
               </div>
               <Tabs value={activeChartTab} onValueChange={setActiveChartTab} className="w-auto">
                 <TabsList className="grid w-full grid-cols-2 rounded-xl">
@@ -251,25 +282,25 @@ export default function AdminDashboard() {
               </Tabs>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="h-full p-0">
             {statsLoading ? (
-              <div className="h-80 flex items-center justify-center">
+              <div className="h-full flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-[#69C0DC]" />
               </div>
             ) : (
-              <div className="h-80">
+              <div className="h-full w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   {activeChartTab === 'scans' ? (
-                    <AreaChart data={weeklyScansData}>
+                    <AreaChart data={weeklyScansData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorScans" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#69C0DC" stopOpacity={0.3}/>
                           <stop offset="95%" stopColor="#69C0DC" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                      <XAxis dataKey="day" stroke="#64748B" fontSize={12} />
-                      <YAxis stroke="#64748B" fontSize={12} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis dataKey="day" stroke="#64748B" fontSize={13} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#64748B" fontSize={13} tickLine={false} axisLine={false} />
                       <Tooltip 
                         contentStyle={{ 
                           backgroundColor: 'white', 
@@ -285,10 +316,12 @@ export default function AdminDashboard() {
                         strokeWidth={3}
                         fillOpacity={1} 
                         fill="url(#colorScans)" 
+                        dot={{ r: 4, stroke: '#69C0DC', strokeWidth: 2, fill: '#fff' }}
+                        activeDot={{ r: 6 }}
                       />
                     </AreaChart>
                   ) : (
-                    <AreaChart data={weeklyUsersData}>
+                    <AreaChart data={weeklyUsersData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
@@ -299,9 +332,9 @@ export default function AdminDashboard() {
                           <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                      <XAxis dataKey="day" stroke="#64748B" fontSize={12} />
-                      <YAxis stroke="#64748B" fontSize={12} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                      <XAxis dataKey="day" stroke="#64748B" fontSize={13} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#64748B" fontSize={13} tickLine={false} axisLine={false} />
                       <Tooltip 
                         contentStyle={{ 
                           backgroundColor: 'white', 
@@ -318,6 +351,8 @@ export default function AdminDashboard() {
                         strokeWidth={2}
                         fillOpacity={1} 
                         fill="url(#colorActive)" 
+                        dot={{ r: 4, stroke: '#10B981', strokeWidth: 2, fill: '#fff' }}
+                        activeDot={{ r: 6 }}
                       />
                       <Area 
                         type="monotone" 
@@ -327,6 +362,8 @@ export default function AdminDashboard() {
                         strokeWidth={2}
                         fillOpacity={1} 
                         fill="url(#colorNew)" 
+                        dot={{ r: 4, stroke: '#8B5CF6', strokeWidth: 2, fill: '#fff' }}
+                        activeDot={{ r: 6 }}
                       />
                     </AreaChart>
                   )}
@@ -337,50 +374,46 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Category Distribution */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm h-[400px] bg-white dark:bg-gray-800">
           <CardHeader>
-            <CardTitle className="text-xl font-bold text-gray-900">E-Waste Categories</CardTitle>
-            <CardDescription>Distribution by item type</CardDescription>
+            <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">E-Waste Categories</CardTitle>
+            <CardDescription className="dark:text-gray-400">Distribution by item type</CardDescription>
           </CardHeader>
           <CardContent>
             {objectStatsLoading ? (
               <div className="h-64 flex items-center justify-center">
                 <Loader2 className="h-6 w-6 animate-spin text-[#69C0DC]" />
               </div>
-            ) : (
-              <>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={categoryData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {categoryData.map((entry: any, index: number) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="space-y-2 mt-4">
-                  {categoryData.map((item: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: item.color }} />
-                        <span className="text-sm text-gray-600">{item.name}</span>
-                      </div>
-                      <span className="text-sm font-medium text-gray-900">{item.value}%</span>
+            ) : hasCategoryData ? (
+              <div className="flex flex-col h-full w-full">
+                <div className="flex flex-1 flex-col sm:flex-row h-full w-full">
+                  {/* Pie Chart */}
+                  <div className="flex items-center justify-center sm:w-1/2 w-full h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <CategoryChart data={categoryData} />
+                    </ResponsiveContainer>
+                  </div>
+                  {/* Legend */}
+                  <div className="sm:w-1/2 w-full flex flex-col overflow-y-auto max-h-full pl-4 pr-2 mt-4 sm:mt-0">
+                    <div className="space-y-1">
+                      {categoryData.map((item: any, index: number) => (
+                        <div key={index} className="flex items-center justify-between text-xs py-1">
+                          <div className="flex items-center space-x-2">
+                            <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: item.color }} />
+                            <span className="text-xs text-gray-600 truncate max-w-[100px]">{item.name}</span>
+                          </div>
+                          <span className="text-xs font-medium text-gray-900">{item.value}%</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </>
+              </div>
+            ) : (
+              <div className="h-64 flex flex-col items-center justify-center text-gray-400">
+                <EmptyChart />
+                <span className="mt-4">No category data available</span>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -389,16 +422,18 @@ export default function AdminDashboard() {
       {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-xl font-bold text-gray-900">Recent Activity</CardTitle>
                 <CardDescription>Latest user submissions and scans</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" className="rounded-xl">
-                View All
-              </Button>
+              <Link href="/admin/e-waste">
+                <Button variant="ghost" size="sm" className="rounded-xl">
+                  View All
+                </Button>
+              </Link>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -445,7 +480,7 @@ export default function AdminDashboard() {
         </Card>
 
         {/* System Overview */}
-        <Card className="border-0 shadow-sm">
+        <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div>

@@ -15,7 +15,10 @@ import {
   MoreVertical,
   Wifi,
   Battery,
-  Signal
+  Signal,
+  Quote,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { OutputData } from '@editorjs/editorjs';
@@ -65,28 +68,6 @@ export function MobilePreview({ article, authorName }: MobilePreviewProps) {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  // Function to extract plain text from EditorJS OutputData
-  const extractTextFromEditorData = (data: OutputData): string => {
-    if (!data.blocks || data.blocks.length === 0) return '';
-    
-    return data.blocks.map(block => {
-      switch (block.type) {
-        case 'paragraph':
-          return stripHtml(block.data?.text || '');
-        case 'header':
-          return stripHtml(block.data?.text || '');
-        case 'list':
-          return block.data?.items?.map((item: string) => stripHtml(item)).join(' ') || '';
-        case 'quote':
-          return stripHtml(block.data?.text || '');
-        case 'code':
-          return block.data?.code || '';
-        default:
-          return '';
-      }
-    }).filter(text => text.trim().length > 0).join(' ');
-  };
-
   // Function to strip HTML tags and get plain text
   const stripHtml = (html: string) => {
     if (typeof window === 'undefined') return html; // SSR safety
@@ -95,26 +76,178 @@ export function MobilePreview({ article, authorName }: MobilePreviewProps) {
     return tmp.textContent || tmp.innerText || '';
   };
 
-  // Get content preview - either from content or excerpt
-  const getContentPreview = () => {
-    if (article.content) {
-      let plainText = '';
+  // Render individual EditorJS blocks
+  const renderEditorBlock = (block: any, index: number) => {
+    switch (block.type) {
+      case 'paragraph':
+        return (
+          <p key={index} className="text-sm text-gray-800 leading-relaxed mb-3">
+            {stripHtml(block.data?.text || '')}
+          </p>
+        );
       
-      if (typeof article.content === 'string') {
-        try {
-          const parsedContent = JSON.parse(article.content) as OutputData;
-          plainText = extractTextFromEditorData(parsedContent);
-        } catch {
-          plainText = stripHtml(article.content);
+      case 'header':
+        const HeaderTag = `h${Math.min(block.data?.level || 1, 6)}` as keyof JSX.IntrinsicElements;
+        const headerSizes = {
+          1: 'text-xl font-bold mb-4',
+          2: 'text-lg font-bold mb-3',
+          3: 'text-base font-bold mb-3',
+          4: 'text-sm font-bold mb-2',
+          5: 'text-sm font-semibold mb-2',
+          6: 'text-xs font-semibold mb-2'
+        };
+        return (
+          <HeaderTag key={index} className={`text-gray-900 ${headerSizes[block.data?.level as keyof typeof headerSizes] || headerSizes[1]}`}>
+            {stripHtml(block.data?.text || '')}
+          </HeaderTag>
+        );
+      
+      case 'list':
+        const ListTag = block.data?.style === 'ordered' ? 'ol' : 'ul';
+        const listClass = block.data?.style === 'ordered' ? 'list-decimal' : 'list-disc';
+        return (
+          <ListTag key={index} className={`${listClass} pl-5 mb-3 space-y-1`}>
+            {block.data?.items?.map((item: any, itemIndex: number) => (
+              <li key={itemIndex} className="text-sm text-gray-800">
+                {block.data?.style === 'checklist' ? (
+                  <div className="flex items-center space-x-2">
+                    {item.meta?.checked ? (
+                      <CheckSquare className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    ) : (
+                      <Square className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                    )}
+                    <span>{stripHtml(item.content || '')}</span>
+                  </div>
+                ) : (
+                  stripHtml(item.content || item)
+                )}
+              </li>
+            ))}
+          </ListTag>
+        );
+      
+      case 'quote':
+        return (
+          <blockquote key={index} className="border-l-4 border-blue-500 pl-4 py-2 mb-4 bg-blue-50 rounded-r">
+            <p className="text-sm text-gray-800 italic mb-1">
+              "{stripHtml(block.data?.text || '')}"
+            </p>
+            {block.data?.caption && (
+              <cite className="text-xs text-gray-600 font-medium">
+                — {stripHtml(block.data.caption)}
+              </cite>
+            )}
+          </blockquote>
+        );
+      
+      case 'code':
+        return (
+          <pre key={index} className="bg-gray-900 text-green-400 p-3 rounded text-xs overflow-x-auto mb-4 font-mono">
+            <code>{block.data?.code || ''}</code>
+          </pre>
+        );
+      
+      case 'delimiter':
+        return (
+          <div key={index} className="flex justify-center items-center my-6">
+            <div className="flex space-x-1">
+              <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+              <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+              <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+            </div>
+          </div>
+        );
+      
+      case 'table':
+        return (
+          <div key={index} className="overflow-x-auto mb-4">
+            <table className="min-w-full border border-gray-300 text-xs">
+              <tbody>
+                {block.data?.content?.map((row: string[], rowIndex: number) => (
+                  <tr key={rowIndex} className={rowIndex === 0 && block.data?.withHeadings ? 'bg-gray-100' : ''}>
+                    {row.map((cell: string, cellIndex: number) => {
+                      const CellTag = rowIndex === 0 && block.data?.withHeadings ? 'th' : 'td';
+                      return (
+                        <CellTag
+                          key={cellIndex}
+                          className="border border-gray-300 px-2 py-1 text-left"
+                        >
+                          {stripHtml(cell)}
+                        </CellTag>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      
+      default:
+        // For any unknown block types, try to extract text
+        if (block.data?.text) {
+          return (
+            <p key={index} className="text-sm text-gray-800 leading-relaxed mb-3">
+              {stripHtml(block.data.text)}
+            </p>
+          );
         }
-      } else {
-        plainText = extractTextFromEditorData(article.content);
-      }
-      
-      return plainText.length > 500 ? plainText.substring(0, 500) + '...' : plainText;
+        return null;
     }
-    return article.excerpt || 'Konten artikel akan ditampilkan di sini...';
   };
+
+  // Render EditorJS content
+  const renderEditorContent = () => {
+    if (!article.content) {
+      return (
+        <p className="text-sm text-gray-600 italic">
+          Konten artikel akan ditampilkan di sini...
+        </p>
+      );
+    }
+
+    let editorData: OutputData;
+    
+    if (typeof article.content === 'string') {
+      try {
+        editorData = JSON.parse(article.content) as OutputData;
+      } catch {
+        // If parsing fails, treat as plain text
+        return (
+          <p className="text-sm text-gray-800 leading-relaxed">
+            {stripHtml(article.content)}
+          </p>
+        );
+      }
+    } else {
+      editorData = article.content;
+    }
+
+    if (!editorData.blocks || editorData.blocks.length === 0) {
+      return (
+        <p className="text-sm text-gray-600 italic">
+          {article.excerpt || 'Konten artikel akan ditampilkan di sini...'}
+        </p>
+      );
+    }
+
+    // Limit content for mobile preview (first 5 blocks or excerpt)
+    const blocksToShow = editorData.blocks.slice(0, 5);
+    
+    return (
+      <div className="space-y-2">
+        {blocksToShow.map((block, index) => renderEditorBlock(block, index))}
+        {editorData.blocks.length > 5 && (
+          <p className="text-xs text-gray-500 italic mt-3">
+            ... dan {editorData.blocks.length - 5} blok konten lainnya
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  // Get the display author name
+  const displayAuthorName = authorName || article.author?.full_name || 'EBS Team';
 
   return (
     <div className="relative mx-auto" style={{ width: '280px', height: '560px' }}>
@@ -165,10 +298,10 @@ export function MobilePreview({ article, authorName }: MobilePreviewProps) {
               </div>
             )}
 
-            {/* Source Attribution */}
+            {/* Author Attribution */}
             <div className="px-4 pb-3">
-              <div className="flex items-center space-x-2 text-xs text-red-600">
-                <span className="font-medium">Kompas.com</span>
+              <div className="flex items-center space-x-2 text-xs text-[#69C0DC]">
+                <span className="font-medium">{displayAuthorName}</span>
                 <span>•</span>
                 <span>{formatDate(article.published_at || article.created_at)}</span>
               </div>
@@ -177,9 +310,7 @@ export function MobilePreview({ article, authorName }: MobilePreviewProps) {
             {/* Article Content */}
             <div className="px-4 pb-6">
               <div className="prose prose-sm max-w-none">
-                <p className="text-sm text-gray-800 leading-relaxed mb-4">
-                  {getContentPreview()}
-                </p>
+                {renderEditorContent()}
               </div>
             </div>
           </div>

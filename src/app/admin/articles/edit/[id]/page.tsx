@@ -112,10 +112,10 @@ export default function EditArticlePage() {
 
   if (isLoading) {
     return (
-        <div className="p-6 sm:p-8 space-y-8">
+        <div className="p-6 sm:p-8 space-y-8 min-h-screen">
             <div className="flex items-center gap-4">
-                <Skeleton className="h-10 w-10 rounded-md" />
-                <div className="space-y-1">
+                <Skeleton className="h-10 w-10 rounded-xl" />
+                <div className="space-y-2">
                     <Skeleton className="h-8 w-64" />
                     <Skeleton className="h-4 w-80" />
                 </div>
@@ -135,18 +135,18 @@ export default function EditArticlePage() {
 
   if (error) {
     return (
-      <div className="p-6 sm:p-8 flex items-center justify-center">
-        <Card className="bg-white rounded-xl border border-slate-200 shadow-sm w-full max-w-lg">
+      <div className="p-6 sm:p-8 flex items-center justify-center min-h-screen">
+        <Card className="bg-white rounded-xl border-0 shadow-lg w-full max-w-lg">
             <CardContent className="flex flex-col items-center justify-center p-12">
             <div className="text-center space-y-4">
-                <div className="mx-auto w-fit p-3 bg-red-100 rounded-full">
+                <div className="mx-auto w-fit p-4 bg-red-100 rounded-full">
                     <AlertTriangle className="h-8 w-8 text-red-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-slate-800">Error loading article</h3>
                 <p className="text-sm text-slate-500 max-w-sm">
                     There was a problem fetching the article data. Please try again.
                 </p>
-                <Button onClick={() => router.push('/admin/articles')} variant="outline">
+                <Button onClick={() => router.push('/admin/articles')} variant="outline" className="rounded-xl">
                     Back to Articles
                 </Button>
             </div>
@@ -157,28 +157,28 @@ export default function EditArticlePage() {
   }
 
   return (
-    <div className="p-6 sm:p-8 space-y-8">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="p-6 sm:p-8 space-y-8 min-h-screen">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={() => router.push('/admin/articles')}>
+            <Button variant="outline" size="icon" onClick={() => router.push('/admin/articles')} className="rounded-xl border-gray-200 hover:border-gray-300">
             <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div>
+            <div className="space-y-1">
             <h1 className="text-3xl font-bold text-slate-800">Edit Article</h1>
-            <p className="text-slate-500 mt-1 line-clamp-1">
+            <p className="text-slate-500 line-clamp-1">
                 Editing: {article?.title}
             </p>
             </div>
         </div>
-        <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => router.push('/admin/articles')}>
+        <div className="flex gap-3">
+            <Button type="button" variant="outline" onClick={() => router.push('/admin/articles')} className="rounded-xl border-gray-200">
                 Cancel
             </Button>
             <Button 
                 type="submit" 
                 form="article-form"
                 disabled={updateArticleMutation.isPending || uploadFileMutation.isPending}
-                className="bg-[#69C0DC] hover:bg-[#5BA8C4] text-white"
+                className="bg-[#69C0DC] hover:bg-[#5BA8C4] text-white rounded-xl shadow-lg"
             >
                 {updateArticleMutation.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -193,15 +193,15 @@ export default function EditArticlePage() {
       <form id="article-form" onSubmit={handleSubmit} className="space-y-8">
         <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
-                <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
-                    <CardHeader>
-                        <CardTitle className="flex items-center text-slate-800">
-                            <FileText className="mr-2 h-5 w-5 text-[#69C0DC]" />
+                <Card className="bg-white rounded-xl border-0 shadow-sm">
+                    <CardHeader className="pb-6">
+                        <CardTitle className="flex items-center text-slate-800 text-xl">
+                            <FileText className="mr-3 h-5 w-5 text-[#69C0DC]" />
                             Article Content
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="title" className="text-sm font-medium text-slate-700">Title</Label>
                             <Input
                                 id="title"
@@ -209,114 +209,118 @@ export default function EditArticlePage() {
                                 onChange={(e) => setTitle(e.target.value)}
                                 placeholder="e.g., The Future of E-Waste Recycling"
                                 required
-                                className="mt-1 bg-white"
+                                className="bg-white border-gray-200 focus:border-[#69C0DC] focus:ring-[#69C0DC] rounded-xl"
                             />
                         </div>
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="excerpt" className="text-sm font-medium text-slate-700">Excerpt</Label>
                             <Input
                                 id="excerpt"
                                 value={excerpt}
                                 onChange={(e) => setExcerpt(e.target.value)}
                                 placeholder="Brief description of the article..."
-                                className="mt-1 bg-white"
+                                className="bg-white border-gray-200 focus:border-[#69C0DC] focus:ring-[#69C0DC] rounded-xl"
                             />
                         </div>
-                        <div>
+                        <div className="space-y-2">
                             <Label htmlFor="tags" className="text-sm font-medium text-slate-700">Tags</Label>
                             <Input
                                 id="tags"
                                 value={tags}
                                 onChange={(e) => setTags(e.target.value)}
                                 placeholder="e.g., recycling, environment, technology (comma-separated)"
-                                className="mt-1 bg-white"
+                                className="bg-white border-gray-200 focus:border-[#69C0DC] focus:ring-[#69C0DC] rounded-xl"
                             />
                         </div>
                         <div className="space-y-2">
+                            <Label className="text-sm font-medium text-slate-700">Featured Image</Label>
+                            <div className="space-y-4">
+                                <div className="relative aspect-video rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center overflow-hidden">
+                                    {imageUrl ? (
+                                        <Image src={imageUrl} alt="Featured image preview" fill className="object-cover rounded-xl" />
+                                    ) : (
+                                        <div className="text-center text-slate-500">
+                                            <Upload className="mx-auto h-8 w-8 mb-2" />
+                                            <p className="text-sm font-medium">Upload an image</p>
+                                            <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 10MB</p>
+                                        </div>
+                                    )}
+                                </div>
+                                <Input
+                                    type="file"
+                                    id="image-upload"
+                                    accept="image/*"
+                                    onChange={(e) => e.target.files && handleImageUpload(e.target.files[0])}
+                                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#69C0DC]/10 file:text-[#69C0DC] hover:file:bg-[#69C0DC]/20 border-gray-200"
+                                />
+                                {uploadFileMutation.isPending && (
+                                    <div className="flex items-center space-x-2 text-sm text-slate-500 bg-blue-50 p-3 rounded-xl">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span>Uploading image...</span>
+                                    </div>
+                                )}
+                                {uploadFileMutation.isError && (
+                                    <div className="flex items-center space-x-2 text-sm text-red-600 bg-red-50 p-3 rounded-xl">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        <span>Upload failed. Please try again.</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="space-y-3">
                             <Label className="text-sm font-medium text-slate-700">Content</Label>
-                            <Editor
-                                data={content}
-                                onChange={(data) => setContent(data)}
-                                placeholder="Write your article here..."
-                            />
+                            <div className="border border-gray-200 rounded-xl overflow-hidden">
+                                <Editor
+                                    data={content}
+                                    onChange={(data) => setContent(data)}
+                                    placeholder="Write your article here..."
+                                />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
             <div className="lg:col-span-1 space-y-6">
-                <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
-                    <CardHeader>
-                        <CardTitle className="flex items-center text-slate-800">
-                            <ImageIcon className="mr-2 h-5 w-5 text-[#69C0DC]" />
-                            Featured Image
+                <Card className="bg-white rounded-xl border-0 shadow-sm">
+                    <CardHeader className="pb-6">
+                        <CardTitle className="flex items-center text-slate-800 text-xl">
+                            <CheckCircle className="mr-3 h-5 w-5 text-[#69C0DC]" />
+                            Publish Settings
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            <div className="relative aspect-video rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center overflow-hidden">
-                                {imageUrl ? (
-                                    <Image src={imageUrl} alt="Featured image preview" fill className="object-cover" />
-                                ) : (
-                                    <div className="text-center text-slate-500">
-                                        <Upload className="mx-auto h-8 w-8" />
-                                        <p className="mt-2 text-sm">Upload an image</p>
-                                    </div>
-                                )}
-                            </div>
-                            <Input
-                                type="file"
-                                id="image-upload"
-                                accept="image/*"
-                                onChange={(e) => e.target.files && handleImageUpload(e.target.files[0])}
-                                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#69C0DC] file:bg-opacity-10 file:text-[#69C0DC] hover:file:bg-opacity-20"
-                            />
-                            {uploadFileMutation.isPending && (
-                                <div className="flex items-center space-x-2 text-sm text-slate-500">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    <span>Uploading...</span>
-                                </div>
-                            )}
-                            {uploadFileMutation.isError && (
-                                <div className="flex items-center space-x-2 text-sm text-red-600">
-                                    <AlertTriangle className="h-4 w-4" />
-                                    <span>Upload failed. Please try again.</span>
-                                </div>
-                            )}
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="publish-status" className="text-sm font-medium text-slate-700">Status</Label>
+                            <Select value={status} onValueChange={(value: 'draft' | 'published') => setStatus(value)}>
+                              <SelectTrigger id="publish-status" className="w-full rounded-xl border-gray-200">
+                                <SelectValue placeholder="Select status" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                <SelectItem value="draft">Draft</SelectItem>
+                                <SelectItem value="published">Published</SelectItem>
+                              </SelectContent>
+                            </Select>
                         </div>
-                    </CardContent>
-                </Card>
-                
-                <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
-                    <CardHeader>
-                        <CardTitle className="flex items-center text-slate-800">
-                            Publish
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <Label htmlFor="publish-status" className="text-sm font-medium text-slate-700">Status</Label>
-                        <Select value={status} onValueChange={(value: 'draft' | 'published') => setStatus(value)}>
-                          <SelectTrigger id="publish-status" className="w-full mt-1">
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="published">Published</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-slate-500 mt-2">
-                           {status === 'published' ? 'This article will be visible to the public.' : 'This article is a draft and not visible.'}
-                        </p>
+                        <div className={`p-3 rounded-xl border ${status === 'published' ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+                            <p className="text-xs font-medium">
+                               {status === 'published' ? 
+                                 '✅ This article will be visible to the public immediately.' : 
+                                 '📝 This article is saved as a draft and not visible to readers.'
+                               }
+                            </p>
+                        </div>
                     </CardContent>
                 </Card>
 
                 {/* Mobile Preview */}
-                <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
-                    <CardHeader>
-                        <CardTitle className="flex items-center text-slate-800">
-                            📱 Mobile Preview
+                <Card className="bg-white rounded-xl border-0 shadow-sm">
+                    <CardHeader className="pb-6">
+                        <CardTitle className="flex items-center text-slate-800 text-xl">
+                            <span className="mr-3 text-lg">📱</span>
+                            Mobile Preview
                         </CardTitle>
-                        <p className="text-sm text-slate-600 mt-1">
+                        <p className="text-sm text-slate-600">
                             See how your article will appear in the mobile app
                         </p>
                     </CardHeader>

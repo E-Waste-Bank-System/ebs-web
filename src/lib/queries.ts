@@ -354,13 +354,45 @@ export function useValidateObject() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { notes?: string } }) => {
+    mutationFn: async ({ id, data }: { 
+      id: string; 
+      data: { 
+        notes?: string;
+        corrected_category?: string;
+        corrected_value?: number;
+      } 
+    }) => {
       const response = await apiClient.validateObject(id, data);
       return response;
     },
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.object(data.id), data);
       queryClient.invalidateQueries({ queryKey: ['objects'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
+      queryClient.invalidateQueries({ queryKey: queryKeys.objectStats });
+    },
+  });
+}
+
+export function useCreateObject() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (data: {
+      name: string;
+      category: string;
+      estimated_value: number;
+      scan_id: string;
+      description?: string;
+      risk_level?: number;
+      damage_level?: number;
+    }) => {
+      const response = await apiClient.createObject(data);
+      return response;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['objects'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.scan(data.scan_id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
       queryClient.invalidateQueries({ queryKey: queryKeys.objectStats });
     },

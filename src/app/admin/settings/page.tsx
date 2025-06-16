@@ -139,7 +139,7 @@ const FeatureCard = ({ category, icon: Icon, color, features }: any) => (
 
 export default function SettingsPage() {
   return (
-    <div className="p-6 space-y-8 bg-gradient-to-br from-slate-50 via-white to-slate-50 min-h-screen">
+    <div className="p-6 space-y-8 min-h-screen">
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center space-x-3">

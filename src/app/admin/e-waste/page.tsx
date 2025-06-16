@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useScans, useObjects, useDashboardStats, useObjectStats, useCreateScan } from '@/lib/queries';
+import { useScans, useObjects, useDashboardStats, useObjectStats, useCreateScan, useDeleteScan } from '@/lib/queries';
 import { useAuth } from '@/lib/auth-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -97,13 +97,13 @@ function ModernStatCard({
 }) {
   if (isLoading) {
     return (
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-slate-50 to-slate-100/50">
+      <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-20" />
-              <div className="h-8 bg-gray-200 rounded animate-pulse w-16" />
-              <div className="h-3 bg-gray-200 rounded animate-pulse w-24" />
+              <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20" />
+              <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-16" />
+              <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-24" />
             </div>
             <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
               <Icon className="h-6 w-6 text-white" />
@@ -115,13 +115,13 @@ function ModernStatCard({
   }
 
   return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-gradient-to-br from-slate-50 to-slate-100/50">
+    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-600">{title}</p>
-            <p className="text-3xl font-bold text-slate-900">{value}</p>
-            <p className="text-xs text-slate-500">{subtitle}</p>
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-500">{subtitle}</p>
           </div>
           <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
             <Icon className="h-6 w-6 text-white" />
@@ -221,9 +221,18 @@ export default function EWastePage() {
   const [activeTab, setActiveTab] = useState('scans');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(6); // Fixed page size for scans
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [scanToDelete, setScanToDelete] = useState<string | null>(null);
   
   const { isAuthenticated, isAdmin, profile } = useAuth();
 
@@ -233,8 +242,18 @@ export default function EWastePage() {
     isLoading: scansLoading,
     error: scansError
   } = useScans({
+    page: currentPage,
+    limit: pageSize
+  });
+
+  // Get all scans for stats (without pagination)
+  const { 
+    data: allScansResponse, 
+    isLoading: allScansLoading,
+    error: allScansError
+  } = useScans({
     page: 1,
-    limit: 50
+    limit: 1000 // Large limit to get all scans for stats
   });
 
   const { 
@@ -259,13 +278,15 @@ export default function EWastePage() {
   } = useObjectStats();
 
   const createScanMutation = useCreateScan();
+  const deleteScanMutation = useDeleteScan();
 
   const scans = scansResponse?.data || [];
+  const allScans = allScansResponse?.data || []; // All scans for stats
   const objects = objectsResponse?.data || [];
 
-  // Calculate statistics
-  const totalScans = scansResponse?.meta?.total || 0;
-  const completedScans = scans.filter(scan => scan.status === 'completed').length;
+  // Calculate statistics using all scans data
+  const totalScans = dashboardStatsResponse?.total_scans || allScansResponse?.meta?.total || 0;
+  const completedScans = allScans.filter(scan => scan.status === 'completed').length;
   
   // Use dashboard stats for total value (convert from USD to IDR)
   const totalValue = dashboardStatsResponse?.total_estimated_value || 0; // Approximate USD to IDR conversion
@@ -292,6 +313,11 @@ export default function EWastePage() {
     try {
       const formData = new FormData();
       formData.append('file', selectedFile);
+      
+      // Optionally add the original filename
+      if (selectedFile.name) {
+        formData.append('original_filename', selectedFile.name);
+      }
 
       await createScanMutation.mutateAsync(formData);
       
@@ -299,20 +325,117 @@ export default function EWastePage() {
       setSelectedFile(null);
       setIsAddDialogOpen(false);
       
-      // Refresh the scans list would happen automatically due to React Query
-    } catch (error) {
+      // Show success notification
+      setNotification({
+        type: 'success',
+        message: 'E-waste scan uploaded successfully! AI processing has started.'
+      });
+      
+      // Clear notification after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
+    } catch (error: any) {
       console.error('Error uploading scan:', error);
-      // You might want to show a toast notification here
+      
+      // Show error notification
+      setNotification({
+        type: 'error',
+        message: error?.message || 'Failed to upload scan. Please try again.'
+      });
+      
+      // Clear notification after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
     } finally {
       setIsUploading(false);
     }
   };
 
+  const validateAndSetFile = (file: File) => {
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setNotification({
+        type: 'error',
+        message: 'Please select a valid image file (JPG, PNG, WebP)'
+      });
+      setTimeout(() => setNotification(null), 5000);
+      return false;
+    }
+    
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > maxSize) {
+      setNotification({
+        type: 'error',
+        message: 'File size must be less than 10MB'
+      });
+      setTimeout(() => setNotification(null), 5000);
+      return false;
+    }
+    
+    setSelectedFile(file);
+    return true;
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
+      validateAndSetFile(file);
     }
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+    setIsDragOver(false);
+    
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+      validateAndSetFile(files[0]);
+    }
+  };
+
+  const handleDeleteScan = async (scanId: string) => {
+    try {
+      await deleteScanMutation.mutateAsync(scanId);
+      
+      // Show success notification
+      setNotification({
+        type: 'success',
+        message: 'Scan deleted successfully!'
+      });
+      
+      // Clear notification after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
+      
+      // Close dialog and reset state
+      setDeleteDialogOpen(false);
+      setScanToDelete(null);
+    } catch (error: any) {
+      console.error('Error deleting scan:', error);
+      
+      // Show error notification
+      setNotification({
+        type: 'error',
+        message: error?.message || 'Failed to delete scan. Please try again.'
+      });
+      
+      // Clear notification after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
+    }
+  };
+
+  const confirmDeleteScan = (scanId: string) => {
+    setScanToDelete(scanId);
+    setDeleteDialogOpen(true);
   };
 
   // Group objects by category for stats using API data
@@ -333,13 +456,58 @@ export default function EWastePage() {
     return matchesSearch && matchesStatus;
   });
 
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter]);
+
+  // Pagination calculations
+  const totalPages = scansResponse?.meta?.pages || 1;
+  const hasNextPage = currentPage < totalPages;
+  const hasPrevPage = currentPage > 1;
+
+  // Debug pagination
+  console.log('Pagination Debug:', {
+    currentPage,
+    totalPages,
+    meta: scansResponse?.meta,
+    scansLength: scans.length,
+    totalScans
+  });
+
   return (
-    <div className="p-6 space-y-8 bg-gradient-to-br from-slate-50 via-white to-slate-50 min-h-screen">
+    <div className="p-6 space-y-8 min-h-screen">
+      {/* Notification */}
+      {notification && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg border ${
+          notification.type === 'success' 
+            ? 'bg-green-50 border-green-200 text-green-800' 
+            : 'bg-red-50 border-red-200 text-red-800'
+        }`}>
+          <div className="flex items-center space-x-2">
+            {notification.type === 'success' ? (
+              <CheckCircle className="h-5 w-5" />
+            ) : (
+              <AlertTriangle className="h-5 w-5" />
+            )}
+            <span className="font-medium">{notification.message}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setNotification(null)}
+              className="ml-2 h-6 w-6 p-0"
+            >
+              ×
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">E-Waste Management</h1>
-          <p className="text-gray-600 mt-2">Monitor and manage e-waste scans, categorization, and processing.</p>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">E-Waste Management</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Monitor and manage e-waste scans, categorization, and processing.</p>
         </div>
         <div className="flex items-center space-x-3">
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -364,14 +532,26 @@ export default function EWastePage() {
                   <div className="flex items-center justify-center w-full">
                     <label
                       htmlFor="file-upload"
-                      className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors"
+                      className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                        isDragOver 
+                          ? 'border-blue-400 bg-blue-50' 
+                          : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+                      }`}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
                     >
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload className="w-8 h-8 mb-2 text-gray-400" />
-                        <p className="mb-2 text-sm text-gray-500">
-                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        <Upload className={`w-8 h-8 mb-2 ${isDragOver ? 'text-blue-500' : 'text-gray-400'}`} />
+                        <p className={`mb-2 text-sm ${isDragOver ? 'text-blue-600' : 'text-gray-500'}`}>
+                          <span className="font-semibold">
+                            {isDragOver ? 'Drop your image here' : 'Click to upload'}
+                          </span>
+                          {!isDragOver && ' or drag and drop'}
                         </p>
-                        <p className="text-xs text-gray-500">PNG, JPG, JPEG (MAX. 10MB)</p>
+                        <p className={`text-xs ${isDragOver ? 'text-blue-500' : 'text-gray-500'}`}>
+                          PNG, JPG, JPEG, WebP (MAX. 10MB)
+                        </p>
                       </div>
                       <input
                         id="file-upload"
@@ -385,7 +565,12 @@ export default function EWastePage() {
                   {selectedFile && (
                     <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
                       <ImageIcon className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm text-blue-700 font-medium">{selectedFile.name}</span>
+                      <div className="flex-1">
+                        <span className="text-sm text-blue-700 font-medium">{selectedFile.name}</span>
+                        <p className="text-xs text-blue-600">
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}
+                        </p>
+                      </div>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -558,8 +743,15 @@ export default function EWastePage() {
                             <DropdownMenuItem onClick={() => router.push(`/admin/e-waste/${scan.id}`)}>
                               View Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Download Image</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => window.open(scan.image_url, '_blank')}>
+                              Download Image
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              onClick={() => confirmDeleteScan(scan.id)}
+                            >
+                              Delete
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -634,14 +826,75 @@ export default function EWastePage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Pagination Controls */}
+          {!scansLoading && scansResponse?.meta && (
+            <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
+              <div className="text-sm text-gray-600">
+                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, scansResponse?.meta?.total || 0)} of {scansResponse?.meta?.total || 0} scans
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={!hasPrevPage}
+                  className="rounded-lg"
+                >
+                  Previous
+                </Button>
+                
+                <div className="flex items-center space-x-1">
+                  {Array.from({ length: Math.min(5, Math.max(1, totalPages)) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-8 h-8 p-0 rounded-lg ${
+                          currentPage === pageNum 
+                            ? 'bg-[#69C0DC] hover:bg-[#5BA8C4] text-white' 
+                            : ''
+                        }`}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={!hasNextPage}
+                  className="rounded-lg"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         {/* Categories Tab */}
         <TabsContent value="categories" className="space-y-6">
-          <Card className="border-0 shadow-sm">
+          <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
             <CardHeader>
-              <CardTitle className="text-xl font-bold text-gray-900">Category Overview</CardTitle>
-              <CardDescription>Breakdown of e-waste items by category</CardDescription>
+              <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">Category Overview</CardTitle>
+              <CardDescription className="dark:text-gray-400">Breakdown of e-waste items by category</CardDescription>
             </CardHeader>
             <CardContent>
               {objectsLoading ? (
@@ -649,10 +902,10 @@ export default function EWastePage() {
                   {[...Array(6)].map((_, i) => (
                     <div key={i} className="p-4 rounded-xl border animate-pulse">
                       <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-xl" />
+                        <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-xl" />
                         <div className="flex-1 space-y-2">
-                          <div className="h-4 bg-gray-200 rounded" />
-                          <div className="h-3 bg-gray-200 rounded w-2/3" />
+                          <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded" />
+                          <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-2/3" />
                         </div>
                       </div>
                     </div>
@@ -663,14 +916,14 @@ export default function EWastePage() {
                   {categoryStatsArray.map((category) => {
                     const IconComponent = category.icon;
                     return (
-                      <div key={category.name} className="p-4 rounded-xl border border-gray-200 hover:border-[#69C0DC] transition-colors">
+                      <div key={category.name} className="p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-[#69C0DC] transition-colors bg-white dark:bg-gray-700">
                         <div className="flex items-center space-x-4">
                           <div className={`p-3 rounded-xl bg-gradient-to-br ${category.color}`}>
                             <IconComponent className="h-6 w-6 text-white" />
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900">{category.name}</h3>
-                            <p className="text-sm text-gray-600">{category.count} items</p>
+                            <h3 className="font-semibold text-gray-900 dark:text-white">{category.name}</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{category.count} items</p>
                             <p className="text-sm font-medium text-[#69C0DC]">{formatRupiah(category.value)}</p>
                           </div>
                         </div>
@@ -686,10 +939,10 @@ export default function EWastePage() {
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-0 shadow-sm">
+            <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
               <CardHeader>
-                <CardTitle className="text-xl font-bold text-gray-900">Processing Status</CardTitle>
-                <CardDescription>Current status of all scans</CardDescription>
+                <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">Processing Status</CardTitle>
+                <CardDescription className="dark:text-gray-400">Current status of all scans</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -721,10 +974,10 @@ export default function EWastePage() {
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-sm">
+            <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
               <CardHeader>
-                <CardTitle className="text-xl font-bold text-gray-900">Value Distribution</CardTitle>
-                <CardDescription>Estimated value by category</CardDescription>
+                <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">Value Distribution</CardTitle>
+                <CardDescription className="dark:text-gray-400">Estimated value by category</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -754,6 +1007,56 @@ export default function EWastePage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold flex items-center">
+              <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+              Delete Scan
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this scan? This action cannot be undone and will permanently remove:
+            </DialogDescription>
+            <ul className="list-disc list-inside mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-400">
+              <li>The scan image and metadata</li>
+              <li>All detected objects and their data</li>
+              <li>Any associated AI analysis results</li>
+            </ul>
+          </DialogHeader>
+          <DialogFooter className="flex space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setScanToDelete(null);
+              }}
+              className="rounded-lg"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => scanToDelete && handleDeleteScan(scanToDelete)}
+              disabled={deleteScanMutation.isPending}
+              className="rounded-lg"
+            >
+              {deleteScanMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-4 w-4 mr-2" />
+                  Delete Scan
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

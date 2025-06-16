@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useScan, useValidateObject, useRejectObject } from '@/lib/queries';
+import { useScan, useValidateObject, useRejectObject, useCreateObject } from '@/lib/queries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -21,6 +22,15 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 import { 
   CheckCircle, 
   XCircle, 
@@ -44,7 +54,8 @@ import {
   ThumbsUp,
   ThumbsDown,
   Cpu,
-  Loader2
+  Loader2,
+  Plus
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Image from 'next/image';
@@ -60,18 +71,36 @@ interface ObjectDetailCardProps {
 function ObjectDetailCard({ object, onUpdate }: ObjectDetailCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [notes, setNotes] = useState(object.validation_notes || '');
+  const [correctedCategory, setCorrectedCategory] = useState(object.category);
+  const [correctedPrice, setCorrectedPrice] = useState(object.estimated_value?.toString() || '0');
 
   const validateObjectMutation = useValidateObject();
   const rejectObjectMutation = useRejectObject();
 
   const handleAction = async (action: 'validate' | 'reject') => {
-    const mutation = action === 'validate' ? validateObjectMutation : rejectObjectMutation;
-    try {
-      await mutation.mutateAsync({ id: object.id, data: { notes } });
-      setIsEditing(false);
-      onUpdate();
-    } catch (error) {
-      console.error(`Failed to ${action} object:`, error);
+    if (action === 'validate') {
+      try {
+        await validateObjectMutation.mutateAsync({ 
+          id: object.id, 
+          data: { 
+            notes,
+            corrected_category: correctedCategory !== object.category ? correctedCategory : undefined,
+            corrected_value: parseFloat(correctedPrice) !== object.estimated_value ? parseFloat(correctedPrice) : undefined
+          } 
+        });
+        setIsEditing(false);
+        onUpdate();
+      } catch (error) {
+        console.error('Failed to validate object:', error);
+      }
+    } else {
+      try {
+        await rejectObjectMutation.mutateAsync({ id: object.id, data: { notes } });
+        setIsEditing(false);
+        onUpdate();
+      } catch (error) {
+        console.error('Failed to reject object:', error);
+      }
     }
   };
   
@@ -146,15 +175,44 @@ function ObjectDetailCard({ object, onUpdate }: ObjectDetailCardProps) {
         )}
 
         {isEditing ? (
-            <div className="space-y-3">
-                <Label htmlFor={`notes-${object.id}`}>Validation Notes</Label>
-                <Textarea 
-                    id={`notes-${object.id}`}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Add notes for validation or rejection..."
-                    className="bg-white"
-                />
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                    <div>
+                        <Label htmlFor={`category-${object.id}`}>Corrected Category</Label>
+                        <Select value={correctedCategory} onValueChange={setCorrectedCategory}>
+                            <SelectTrigger className="bg-white">
+                                <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {CATEGORIES.map((cat) => (
+                                    <SelectItem key={cat} value={cat}>
+                                        {cat}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div>
+                        <Label htmlFor={`price-${object.id}`}>Corrected Price (IDR)</Label>
+                        <Input
+                            id={`price-${object.id}`}
+                            type="number"
+                            value={correctedPrice}
+                            onChange={(e) => setCorrectedPrice(e.target.value)}
+                            className="bg-white"
+                        />
+                    </div>
+                </div>
+                <div>
+                    <Label htmlFor={`notes-${object.id}`}>Validation Notes</Label>
+                    <Textarea 
+                        id={`notes-${object.id}`}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="Add notes for validation or rejection..."
+                        className="bg-white"
+                    />
+                </div>
                 <div className="flex justify-end gap-2">
                     <Button variant="ghost" onClick={() => setIsEditing(false)} disabled={isPending}>Cancel</Button>
                     <Button onClick={() => handleAction('reject')} disabled={isPending} variant="destructive">
@@ -186,6 +244,162 @@ function ObjectDetailCard({ object, onUpdate }: ObjectDetailCardProps) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+const CATEGORIES = [
+  "AC", "Adaptor /Kilo", "Aki Motor", "Alat Tensi", "Alat Tes Vol", 
+  "Baterai Laptop", "Camera", "CPU Intel", "Flashdisk", "Hair Dryer",
+  "Handphone", "Hardisk", "Jam Tangan", "Keyboard", "Kipas",
+  "Komponen CPU", "Komponen Kulkas", "Kompor Listrik", "Lampu", "Laptop",
+  "Mesin Cuci", "Microwave", "Monitor", "Mouse", "Neon Box",
+  "Oven", "Panel Surya", "Printer", "PS2", "Remot",
+  "Router", "Senter", "Seterika", "Solder", "Speaker", "Telefon", 
+  "TV", "Vacum Cleaner"
+];
+
+interface ManualObjectDialogProps {
+  scanId: string;
+  onUpdate: () => void;
+}
+
+function ManualObjectDialog({ scanId, onUpdate }: ManualObjectDialogProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('');
+  const [estimatedValue, setEstimatedValue] = useState('');
+  const [description, setDescription] = useState('');
+  const [riskLevel, setRiskLevel] = useState('1');
+  const [damageLevel, setDamageLevel] = useState('1');
+
+  const createObjectMutation = useCreateObject();
+
+  const handleSubmit = async () => {
+    try {
+      await createObjectMutation.mutateAsync({
+        name,
+        category,
+        estimated_value: parseFloat(estimatedValue),
+        scan_id: scanId,
+        description: description || undefined,
+        risk_level: parseInt(riskLevel),
+        damage_level: parseInt(damageLevel),
+      });
+      
+      // Reset form
+      setName('');
+      setCategory('');
+      setEstimatedValue('');
+      setDescription('');
+      setRiskLevel('1');
+      setDamageLevel('1');
+      setIsOpen(false);
+      onUpdate();
+    } catch (error) {
+      console.error('Failed to create object:', error);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button className="bg-[#69C0DC] hover:bg-[#5BADD1] text-white">
+          <Plus className="mr-2 h-4 w-4" />
+          Add Manual Entry
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Add Manual Object Entry</DialogTitle>
+          <DialogDescription>
+            Add an object that wasn't detected by the AI system.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="name">Object Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Old Laptop"
+              />
+            </div>
+            <div>
+              <Label htmlFor="category">Category</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="estimated-value">Estimated Value (IDR)</Label>
+            <Input
+              id="estimated-value"
+              type="number"
+              value={estimatedValue}
+              onChange={(e) => setEstimatedValue(e.target.value)}
+              placeholder="e.g., 150000"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="risk-level">Risk Level (1-10)</Label>
+              <Input
+                id="risk-level"
+                type="number"
+                min="1"
+                max="10"
+                value={riskLevel}
+                onChange={(e) => setRiskLevel(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="damage-level">Damage Level (1-10)</Label>
+              <Input
+                id="damage-level"
+                type="number"
+                min="1"
+                max="10"
+                value={damageLevel}
+                onChange={(e) => setDamageLevel(e.target.value)}
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="description">Description (Optional)</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Additional notes about this object..."
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSubmit}
+            disabled={!name || !category || !estimatedValue || createObjectMutation.isPending}
+          >
+            {createObjectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Add Object
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -275,12 +489,14 @@ export default function ScanDetailsPage() {
             <StatCard title="Status" value={scan.status} icon={scan.status === 'completed' ? CheckCircle : Clock} />
             <StatCard title="Objects Detected" value={scan.objects_count} icon={Cpu} />
             <StatCard title="Total Value" value={formatCurrency(scan.total_estimated_value)} icon={DollarSign} />
-            <StatCard 
-                title="Validation Progress" 
-                value={`${validatedObjects.length} / ${detectedObjects.length}`}
-                icon={CheckCircle}
-                change={`${Math.round(scan.objects_count > 0 ? (validatedObjects.length / detectedObjects.length) * 100 : 0)}% Validated`}
-            />
+            {detectedObjects.length > 0 && (
+                <StatCard 
+                    title="Validation Progress" 
+                    value={`${validatedObjects.length} / ${detectedObjects.length}`}
+                    icon={CheckCircle}
+                    change={`${Math.round((validatedObjects.length / detectedObjects.length) * 100)}% Validated`}
+                />
+            )}
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8 items-start">
@@ -332,13 +548,21 @@ export default function ScanDetailsPage() {
             <div className="lg:col-span-2 space-y-6">
                  <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
                     <CardHeader>
-                        <CardTitle className="flex items-center text-slate-800">
-                            <Cpu className="mr-2 h-5 w-5 text-[#69C0DC]" />
-                            Detected Objects
-                        </CardTitle>
-                        <CardDescription>
-                            The AI model detected {detectedObjects.length} objects. Review each one to validate or reject.
-                        </CardDescription>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle className="flex items-center text-slate-800">
+                                    <Cpu className="mr-2 h-5 w-5 text-[#69C0DC]" />
+                                    Detected Objects
+                                </CardTitle>
+                                <CardDescription>
+                                    {detectedObjects.length > 0 
+                                        ? `The AI model detected ${detectedObjects.length} objects. Review each one to validate or reject.`
+                                        : 'No objects were detected in this scan. You can manually add objects that were missed by the AI.'
+                                    }
+                                </CardDescription>
+                            </div>
+                            <ManualObjectDialog scanId={scan.id} onUpdate={refetch} />
+                        </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                        {detectedObjects.length > 0 ? (
@@ -347,7 +571,11 @@ export default function ScanDetailsPage() {
                             ))
                        ) : (
                             <div className="text-center py-12">
-                                <p className="text-slate-500">No objects were detected in this scan.</p>
+                                <div className="mx-auto w-fit p-3 bg-gray-100 rounded-full mb-4">
+                                    <Cpu className="h-8 w-8 text-gray-400" />
+                                </div>
+                                <p className="text-slate-500 mb-4">No objects were detected in this scan.</p>
+                                <p className="text-sm text-slate-400">Use the "Add Manual Entry" button above to add objects that weren't detected.</p>
                             </div>
                        )}
                     </CardContent>

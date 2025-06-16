@@ -78,13 +78,13 @@ function MetricCard({
 }) {
   if (isLoading) {
     return (
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-slate-50 to-slate-100/50">
+      <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
-              <div className="h-4 bg-gray-200 rounded animate-pulse w-20" />
-              <div className="h-8 bg-gray-200 rounded animate-pulse w-16" />
-              <div className="h-3 bg-gray-200 rounded animate-pulse w-24" />
+              <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20" />
+              <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-16" />
+              <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-24" />
             </div>
             <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
               <Icon className="h-6 w-6 text-white" />
@@ -96,13 +96,13 @@ function MetricCard({
   }
 
   return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-gradient-to-br from-slate-50 to-slate-100/50">
+    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800 e">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-600">{title}</p>
+            <p className="text-sm font-medium text-slate-600 dark:text-white">{title}</p>
             <div className="flex items-baseline space-x-2">
-              <p className="text-3xl font-bold text-slate-900">{value}</p>
+              <p className="text-3xl font-bold text-slate-900 dark:text-white">{value}</p>
               {change && (
                 <div className="flex items-center space-x-1">
                   {changeType === 'increase' ? (
@@ -142,10 +142,10 @@ function ChartCard({
   isLoading?: boolean;
 }) {
   return (
-    <Card className="border-0 shadow-sm">
+    <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
       <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-bold text-gray-900">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
+        <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">{title}</CardTitle>
+        {description && <CardDescription className="dark:text-gray-400">{description}</CardDescription>}
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -197,17 +197,16 @@ export default function AnalyticsPage() {
   // Category breakdown from real data
   const categoryBreakdown = objectStats?.by_category?.map((item: any, index: number) => ({
     name: item.category,
-    value: Math.round((item.count / (objectStats.by_category?.reduce((sum: number, cat: any) => sum + cat.count, 0) || 1)) * 100),
-    count: item.count,
+    value: Math.round((parseInt(item.count) / (objectStats.by_category?.reduce((sum: number, cat: any) => sum + parseInt(cat.count), 0) || 1)) * 100),
+    count: parseInt(item.count),
     total_value: parseFloat(item.total_value) || 0, // Use actual total_value from backend
     color: ['#69C0DC', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#6B7280'][index % 6]
   })) || [];
 
-  // Processing status data
+  // Processing status data - showing validation status instead of scan status
   const statusData = [
-    { name: 'Completed', value: scans.filter(s => s.status === 'completed').length, color: '#10B981' },
-    { name: 'Processing', value: scans.filter(s => s.status === 'processing').length, color: '#69C0DC' },
-    { name: 'Failed', value: scans.filter(s => s.status === 'failed').length, color: '#EF4444' }
+    { name: 'Validated', value: objects.filter(obj => obj.is_validated === true).length, color: '#10B981' },
+    { name: 'Not Validated', value: objects.filter(obj => obj.is_validated === false).length, color: '#F59E0B' }
   ];
 
   // Risk level data
@@ -222,12 +221,12 @@ export default function AnalyticsPage() {
   const adminUsers = profiles.filter(p => p.role === 'ADMIN' || p.role === 'SUPERADMIN').length;
 
   return (
-    <div className="p-6 space-y-8 bg-gradient-to-br from-slate-50 via-white to-slate-50 min-h-screen">
+    <div className="p-6 space-y-8 min-h-screen">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">Analytics</h1>
-          <p className="text-gray-600 mt-2">Comprehensive insights into your e-waste management system performance.</p>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Analytics</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">Comprehensive insights into your e-waste management system performance.</p>
         </div>
         <div className="flex items-center space-x-3">
           <Select value={timeRange} onValueChange={setTimeRange}>
@@ -298,7 +297,7 @@ export default function AnalyticsPage() {
         >
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <RechartsPieChart>
+              <RechartsPieChart width={400} height={320}>
                 <Pie
                   data={categoryBreakdown}
                   cx="50%"
@@ -314,7 +313,7 @@ export default function AnalyticsPage() {
                 </Pie>
                 <Tooltip 
                   formatter={(value: any, name: any, props: any) => [
-                    `${value}% (${props.payload.count} items)`,
+                    `${props.payload.count} items (${value}%)`,
                     props.payload.name
                   ]}
                   contentStyle={{ 
@@ -323,18 +322,18 @@ export default function AnalyticsPage() {
                     borderRadius: '12px', 
                     boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
                   }} 
-                />
+                /> 
                 <Legend />
               </RechartsPieChart>
             </ResponsiveContainer>
           </div>
         </ChartCard>
 
-        {/* Processing Status */}
+        {/* Validation Status */}
         <ChartCard
-          title="Processing Status"
-          description="Current status of all scans"
-          isLoading={scansLoading}
+          title="Validation Status"
+          description="Validation status of detected objects"
+          isLoading={objectsLoading}
         >
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
