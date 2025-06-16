@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -104,10 +105,14 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white dark:bg-gray-800 shadow-xl">
           <div className="flex h-16 items-center justify-between px-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#69C0DC] to-[#5BA8C4] rounded-lg flex items-center justify-center shadow-lg">
-                <Zap className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-white">EBS Admin</span>
+              <Image 
+                src="/logo.svg"
+                alt="EBS Logo"
+                width={45}
+                height={45}
+                className="rounded-lg shadow-lg"
+              />
+              <span className="text-xl font-bold text-gray-900 dark:text-white">E-Waste Hub</span>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)} className="dark:text-gray-300 dark:hover:text-white">
               <X className="h-5 w-5" />
@@ -115,7 +120,7 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
           </div>
           <nav className="flex-1 px-4 py-6 space-y-2">
             {navigation.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = pathname === item.href || pathname === item.href + '/';
               return (
                 <Link
                   key={item.name}
@@ -135,6 +140,9 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
                     )}
                   />
                   {item.name}
+                  {isActive && (
+                    <div className="ml-auto w-2 h-2 bg-white rounded-full" />
+                  )}
                 </Link>
               );
             })}
@@ -148,11 +156,15 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
           {/* Logo */}
           <div className="flex items-center h-20 px-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#69C0DC] to-[#5BA8C4] rounded-xl flex items-center justify-center shadow-lg">
-                <Zap className="h-6 w-6 text-white" />
-              </div>
+              <Image 
+                  src="/logo.svg"
+                  alt="EBS Logo"
+                  width={45}
+                  height={45}
+                  className="rounded-lg shadow-lg"
+              />
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">EBS Admin</h1>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">E-Waste Hub</h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400">E-Waste Bank System</p>
               </div>
             </div>
@@ -161,7 +173,7 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2">
             {navigation.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = pathname === item.href || pathname === item.href + '/';
               return (
                 <Link
                   key={item.name}
