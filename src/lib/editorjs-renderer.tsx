@@ -1,3 +1,4 @@
+import React from 'react';
 import { OutputData } from '@editorjs/editorjs';
 
 interface EditorBlock {
@@ -66,15 +67,17 @@ function renderBlock(block: EditorBlock, index: number) {
       );
 
     case 'header':
-      const HeaderTag = `h${block.data?.level || 2}` as keyof JSX.IntrinsicElements;
-      const headerClass = {
-        1: 'text-4xl font-bold text-gray-900 mb-4',
-        2: 'text-3xl font-bold text-gray-900 mb-3',
-        3: 'text-2xl font-bold text-gray-900 mb-3',
-        4: 'text-xl font-bold text-gray-900 mb-2',
-        5: 'text-lg font-bold text-gray-900 mb-2',
-        6: 'text-base font-bold text-gray-900 mb-2'
-      }[block.data?.level || 2] || 'text-2xl font-bold text-gray-900 mb-3';
+      const level = block.data?.level || 2;
+      const HeaderTag = `h${level}` as keyof React.JSX.IntrinsicElements;
+      const headerStyles = [
+        'text-4xl font-bold text-gray-900 mb-4', // h1
+        'text-3xl font-bold text-gray-900 mb-3', // h2
+        'text-2xl font-bold text-gray-900 mb-3', // h3
+        'text-xl font-bold text-gray-900 mb-2',  // h4
+        'text-lg font-bold text-gray-900 mb-2',  // h5
+        'text-base font-bold text-gray-900 mb-2' // h6
+      ];
+      const headerClass = headerStyles[level - 1] || headerStyles[1];
 
       return (
         <HeaderTag 

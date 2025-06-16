@@ -1,477 +1,346 @@
 'use client'
 
 import { useState } from 'react';
-import { useDashboardStats, useObjectStats, useScans, useObjects, useProfiles } from '@/lib/queries';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   TrendingUp,
-  TrendingDown,
-  BarChart3,
-  PieChart,
-  Activity,
-  Users,
-  Recycle,
-  DollarSign,
-  Calendar,
-  Download,
-  Filter,
-  RefreshCw,
-  ArrowUpRight,
-  ArrowDownRight,
-  Target,
-  Zap,
-  Globe,
-  Clock,
-  Loader2
 } from 'lucide-react';
 import {
-  LineChart,
-  Line,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
   PieChart as RechartsPieChart,
   Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
-  RadialBarChart,
-  RadialBar,
-  ComposedChart
 } from 'recharts';
 import React from 'react';
 
-// Component for metric cards
-function MetricCard({ 
-  title, 
-  value, 
-  change, 
-  changeType, 
-  icon: Icon, 
-  color, 
-  subtitle,
-  isLoading = false
-}: { 
-  title: string; 
-  value: string | number; 
-  change?: string; 
-  changeType?: 'increase' | 'decrease'; 
-  icon: any; 
-  color: string; 
-  subtitle?: string;
-  isLoading?: boolean;
-}) {
-  if (isLoading) {
-    return (
-      <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2 flex-1">
-              <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20" />
-              <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-16" />
-              <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-24" />
-            </div>
-            <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
-              <Icon className="h-6 w-6 text-white" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
-  return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800 e">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-600 dark:text-white">{title}</p>
-            <div className="flex items-baseline space-x-2">
-              <p className="text-3xl font-bold text-slate-900 dark:text-white">{value}</p>
-              {change && (
-                <div className="flex items-center space-x-1">
-                  {changeType === 'increase' ? (
-                    <ArrowUpRight className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <ArrowDownRight className="h-4 w-4 text-red-600" />
-                  )}
-                  <span className={`text-sm font-medium ${
-                    changeType === 'increase' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {change}
-                  </span>
-                </div>
-              )}
-            </div>
-            {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
-          </div>
-          <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
-            <Icon className="h-6 w-6 text-white" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+
+interface ChartDataItem {
+  name: string;
+  value: number;
+  color?: string;
 }
 
-// Component for chart cards
-function ChartCard({ 
-  title, 
-  description, 
-  children,
-  isLoading = false
-}: { 
-  title: string; 
-  description?: string; 
-  children: React.ReactNode;
-  isLoading?: boolean;
-}) {
-  return (
-    <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">{title}</CardTitle>
-        {description && <CardDescription className="dark:text-gray-400">{description}</CardDescription>}
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="h-80 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-[#69C0DC]" />
-          </div>
-        ) : (
-          children
-        )}
-      </CardContent>
-    </Card>
-  );
+interface BarChartDataItem {
+  name: string;
+  scans: number;
+  objects: number;
 }
 
-// Format currency as Rupiah
-const formatRupiah = (amount: number) => {
-  // Handle NaN, null, undefined, or invalid numbers
-  const validAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(validAmount);
-};
+interface AnalyticsData {
+  totalScans: number;
+  totalObjects: number;
+  objectsByCategory: ChartDataItem[];
+  scansByDate: BarChartDataItem[];
+  riskDistribution: ChartDataItem[];
+  categoryTrends: { name: string; data: { month: string; count: number }[] }[];
+  averageObjectsPerScan: number;
+  topCategories: { category: string; count: number; percentage: number }[];
+  riskMetrics: {
+    highRisk: number;
+    mediumRisk: number;
+    lowRisk: number;
+  };
+  timeSeriesData: { date: string; scans: number; objects: number }[];
+  geographicalData: { location: string; scans: number; objects: number }[];
+  userEngagement: { activeUsers: number; totalUsers: number; engagementRate: number };
+}
 
 export default function AnalyticsPage() {
-  const [timeRange, setTimeRange] = useState('6m');
-  const [selectedMetric, setSelectedMetric] = useState('scans');
+  const [dateRange, setDateRange] = useState<string>('7d');
 
-  // API queries
-  const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
-  const { data: objectStats, isLoading: objectStatsLoading } = useObjectStats();
-  const { data: scansResponse, isLoading: scansLoading } = useScans({ page: 1, limit: 100 });
-  const { data: objectsResponse, isLoading: objectsLoading } = useObjects({ page: 1, limit: 500 });
-  const { data: profilesResponse, isLoading: profilesLoading } = useProfiles({ page: 1, limit: 100 });
+  // Mock data for demonstration
+  const analyticsData: AnalyticsData = {
+    totalScans: 1247,
+    totalObjects: 3891,
+    objectsByCategory: [
+      { name: 'Smartphones', value: 456, color: '#3b82f6' },
+      { name: 'Laptops', value: 234, color: '#10b981' },
+      { name: 'Tablets', value: 189, color: '#f59e0b' },
+      { name: 'Accessories', value: 167, color: '#ef4444' },
+      { name: 'Other', value: 98, color: '#8b5cf6' },
+    ],
+    scansByDate: [
+      { name: 'Mon', scans: 23, objects: 67 },
+      { name: 'Tue', scans: 45, objects: 134 },
+      { name: 'Wed', scans: 34, objects: 98 },
+      { name: 'Thu', scans: 56, objects: 167 },
+      { name: 'Fri', scans: 67, objects: 201 },
+      { name: 'Sat', scans: 43, objects: 129 },
+      { name: 'Sun', scans: 38, objects: 114 },
+    ],
+    riskDistribution: [
+      { name: 'Low Risk', value: 65, color: '#10b981' },
+      { name: 'Medium Risk', value: 25, color: '#f59e0b' },
+      { name: 'High Risk', value: 10, color: '#ef4444' },
+    ],
+    categoryTrends: [
+      {
+        name: 'Smartphones',
+        data: [
+          { month: 'Jan', count: 45 },
+          { month: 'Feb', count: 52 },
+          { month: 'Mar', count: 48 },
+          { month: 'Apr', count: 61 },
+          { month: 'May', count: 55 },
+          { month: 'Jun', count: 67 },
+        ],
+      },
+      {
+        name: 'Laptops',
+        data: [
+          { month: 'Jan', count: 23 },
+          { month: 'Feb', count: 29 },
+          { month: 'Mar', count: 31 },
+          { month: 'Apr', count: 28 },
+          { month: 'May', count: 34 },
+          { month: 'Jun', count: 39 },
+        ],
+      },
+    ],
+    averageObjectsPerScan: 3.12,
+    topCategories: [
+      { category: 'Smartphones', count: 456, percentage: 35.2 },
+      { category: 'Laptops', count: 234, percentage: 18.1 },
+      { category: 'Tablets', count: 189, percentage: 14.6 },
+      { category: 'Accessories', count: 167, percentage: 12.9 },
+      { category: 'Other', count: 98, percentage: 7.6 },
+    ],
+    riskMetrics: {
+      highRisk: 128,
+      mediumRisk: 312,
+      lowRisk: 807,
+    },
+    timeSeriesData: [
+      { date: '2024-01-01', scans: 45, objects: 134 },
+      { date: '2024-01-02', scans: 52, objects: 156 },
+      { date: '2024-01-03', scans: 48, objects: 142 },
+      { date: '2024-01-04', scans: 61, objects: 183 },
+      { date: '2024-01-05', scans: 55, objects: 165 },
+      { date: '2024-01-06', scans: 67, objects: 201 },
+      { date: '2024-01-07', scans: 59, objects: 177 },
+    ],
+    geographicalData: [
+      { location: 'North America', scans: 456, objects: 1367 },
+      { location: 'Europe', scans: 342, objects: 1026 },
+      { location: 'Asia', scans: 289, objects: 867 },
+      { location: 'Other', scans: 160, objects: 480 },
+    ],
+    userEngagement: {
+      activeUsers: 234,
+      totalUsers: 456,
+      engagementRate: 51.3,
+    },
+  };
 
-  const scans = scansResponse?.data || [];
-  const objects = objectsResponse?.data || [];
-  const profiles = profilesResponse?.data || [];
+  const formatPercentage = (value: number, name: string) => {
+    const total = analyticsData.objectsByCategory.reduce((sum, item) => sum + item.value, 0);
+    const percentage = ((value / total) * 100).toFixed(1);
+    return `${name}: ${percentage}%`;
+  };
 
-  // Calculate performance data
-  const totalValue = dashboardStats?.total_estimated_value || 0; // Convert USD to IDR
-  
-  // Debug logging
-  console.log('Analytics Debug - Dashboard stats:', dashboardStats);
-  console.log('Analytics Debug - Total value IDR:', totalValue);
+  const renderCustomizedLabel = (entry: ChartDataItem & { cx: number; cy: number; midAngle: number; innerRadius: number; outerRadius: number; percent: number }) => {
+    const RADIAN = Math.PI / 180;
+    const radius = entry.innerRadius + (entry.outerRadius - entry.innerRadius) * 0.5;
+    const x = entry.cx + radius * Math.cos(-entry.midAngle * RADIAN);
+    const y = entry.cy + radius * Math.sin(-entry.midAngle * RADIAN);
 
-  // Category breakdown from real data
-  const categoryBreakdown = objectStats?.by_category?.map((item: any, index: number) => ({
-    name: item.category,
-    value: Math.round((parseInt(item.count) / (objectStats.by_category?.reduce((sum: number, cat: any) => sum + parseInt(cat.count), 0) || 1)) * 100),
-    count: parseInt(item.count),
-    total_value: parseFloat(item.total_value) || 0, // Use actual total_value from backend
-    color: ['#69C0DC', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#6B7280'][index % 6]
-  })) || [];
-
-  // Processing status data - showing validation status instead of scan status
-  const statusData = [
-    { name: 'Validated', value: objects.filter(obj => obj.is_validated === true).length, color: '#10B981' },
-    { name: 'Not Validated', value: objects.filter(obj => obj.is_validated === false).length, color: '#F59E0B' }
-  ];
-
-  // Risk level data
-  const riskData = objectStats?.by_risk_level?.map((item: any) => ({
-    name: `Risk Level ${item.risk_level}`,
-    value: item.count,
-    color: item.risk_level <= 2 ? '#10B981' : item.risk_level <= 4 ? '#F59E0B' : '#EF4444'
-  })) || [];
-
-  // User activity data
-  const activeUsers = profiles.filter(p => p.is_active).length;
-  const adminUsers = profiles.filter(p => p.role === 'ADMIN' || p.role === 'SUPERADMIN').length;
+    return (
+      <text x={x} y={y} fill="white" textAnchor={x > entry.cx ? 'start' : 'end'} dominantBaseline="central">
+        {`${(entry.percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
 
   return (
-    <div className="p-6 space-y-8 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Analytics</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Comprehensive insights into your e-waste management system performance.</p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-40 rounded-xl">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="1m">Last Month</SelectItem>
-              <SelectItem value="3m">Last 3 Months</SelectItem>
-              <SelectItem value="6m">Last 6 Months</SelectItem>
-              <SelectItem value="1y">Last Year</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" className="rounded-xl">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant={dateRange === '7d' ? 'default' : 'outline'}
+            onClick={() => setDateRange('7d')}
+          >
+            7 days
           </Button>
-          <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl shadow-lg">
-            <Download className="h-4 w-4 mr-2" />
-            Export Data
+          <Button
+            variant={dateRange === '30d' ? 'default' : 'outline'}
+            onClick={() => setDateRange('30d')}
+          >
+            30 days
+          </Button>
+          <Button
+            variant={dateRange === '90d' ? 'default' : 'outline'}
+            onClick={() => setDateRange('90d')}
+          >
+            90 days
           </Button>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          title="Total Scans"
-          value={dashboardStats?.total_scans || 0}
-          icon={Recycle}
-          color="from-[#69C0DC] to-[#5BA8C4]"
-          subtitle="All submissions"
-          isLoading={statsLoading}
-        />
-        <MetricCard
-          title="Active Users"
-          value={activeUsers}
-          icon={Users}
-          color="from-green-500 to-green-600"
-          subtitle="Currently active"
-          isLoading={profilesLoading}
-        />
-        <MetricCard
-          title="Total Value"
-          value={formatRupiah(totalValue)}
-          icon={DollarSign}
-          color="from-purple-500 to-purple-600"
-          subtitle="Estimated worth"
-          isLoading={scansLoading}
-        />
-        <MetricCard
-          title="Validation Rate"
-          value={dashboardStats?.validation_rate ? `${Math.round(dashboardStats.validation_rate)}%` : '0%'}
-          icon={Target}
-          color="from-orange-500 to-orange-600"
-          subtitle="System accuracy"
-          isLoading={statsLoading}
-        />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Scans</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analyticsData.totalScans.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Objects Detected</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analyticsData.totalObjects.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">+15.3% from last month</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Avg Objects/Scan</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analyticsData.averageObjectsPerScan}</div>
+            <p className="text-xs text-muted-foreground">+2.4% from last month</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{analyticsData.userEngagement.activeUsers}</div>
+            <p className="text-xs text-muted-foreground">+5.7% from last month</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Main Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Category Distribution */}
-        <ChartCard
-          title="E-Waste Categories"
-          description="Distribution of detected items by category"
-          isLoading={objectStatsLoading}
-        >
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <RechartsPieChart width={400} height={320}>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Objects by Category</CardTitle>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <ResponsiveContainer width="100%" height={350}>
+              <RechartsPieChart>
                 <Pie
-                  data={categoryBreakdown}
+                  data={analyticsData.objectsByCategory}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={120}
-                  paddingAngle={5}
+                  labelLine={false}
+                  label={renderCustomizedLabel}
+                  outerRadius={80}
+                  fill="#8884d8"
                   dataKey="value"
-                >
-                  {categoryBreakdown.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value: any, name: any, props: any) => [
-                    `${props.payload.count} items (${value}%)`,
-                    props.payload.name
-                  ]}
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: 'none', 
-                    borderRadius: '12px', 
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
-                  }} 
-                /> 
-                <Legend />
+                />
+                <Tooltip formatter={formatPercentage} />
               </RechartsPieChart>
             </ResponsiveContainer>
-          </div>
-        </ChartCard>
-
-        {/* Validation Status */}
-        <ChartCard
-          title="Validation Status"
-          description="Validation status of detected objects"
-          isLoading={objectsLoading}
-        >
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={statusData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="name" stroke="#64748B" fontSize={12} />
-                <YAxis stroke="#64748B" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: 'none', 
-                    borderRadius: '12px', 
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
-                  }} 
-                />
-                <Bar dataKey="value" fill="#69C0DC" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </ChartCard>
+          </CardContent>
+        </Card>
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Risk Distribution</CardTitle>
+            <CardDescription>Classification of detected objects by risk level</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {analyticsData.riskDistribution.map((risk) => (
+                <div key={risk.name} className="flex items-center">
+                  <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: risk.color }} />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{risk.name}</span>
+                      <span className="text-sm text-muted-foreground">{risk.value}%</span>
+                    </div>
+                    <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full"
+                        style={{ backgroundColor: risk.color, width: `${risk.value}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Detailed Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Category Value Breakdown */}
-        <ChartCard
-          title="Value by Category"
-          description="Estimated value distribution"
-          isLoading={objectStatsLoading}
-        >
-          <div className="space-y-4">
-            {categoryBreakdown.slice(0, 5).map((category: any) => {
-              const categoryValue = category.total_value || 0;
-              const percentage = totalValue > 0 ? Math.round((categoryValue / totalValue) * 100) : 0;
-              return (
-                <div key={category.name} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
-                    <span className="font-medium text-gray-900">{category.name}</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="h-2 rounded-full bg-[#69C0DC]"
-                        style={{ width: `${percentage}%` }}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Top Categories</CardTitle>
+            <CardDescription>Most frequently detected e-waste categories</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {analyticsData.topCategories.map((category, index) => (
+                <div key={category.category} className="flex items-center space-x-4">
+                  <div className="text-sm font-medium w-4">{index + 1}</div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{category.category}</span>
+                      <span className="text-sm text-muted-foreground">{category.count}</span>
+                    </div>
+                    <div className="mt-1 w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${category.percentage}%` }}
                       />
                     </div>
-                    <span className="text-sm font-medium text-gray-900 w-20 text-right">
-                      {formatRupiah(categoryValue)}
-                    </span>
                   </div>
+                  <div className="text-sm text-muted-foreground">{category.percentage}%</div>
                 </div>
-              );
-            })}
-          </div>
-        </ChartCard>
-
-        {/* Risk Level Distribution */}
-        <ChartCard
-          title="Risk Assessment"
-          description="Objects by risk level"
-          isLoading={objectStatsLoading}
-        >
-          <div className="space-y-4">
-            {riskData.map((risk: any, index: number) => {
-              const total = riskData.reduce((sum: number, r: any) => sum + r.value, 0);
-              const percentage = total > 0 ? Math.round((risk.value / total) * 100) : 0;
-              return (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: risk.color }} />
-                    <span className="font-medium text-gray-900">{risk.name}</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="h-2 rounded-full"
-                        style={{ 
-                          backgroundColor: risk.color,
-                          width: `${percentage}%` 
-                        }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium text-gray-900 w-12 text-right">{risk.value}</span>
-                  </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Latest scanning activity overview</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <div className="w-2 h-2 bg-green-500 rounded-full" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">234 new scans today</p>
+                  <p className="text-xs text-muted-foreground">2 hours ago</p>
                 </div>
-              );
-            })}
-          </div>
-        </ChartCard>
-
-        {/* System Insights */}
-        <ChartCard
-          title="System Insights"
-          description="Key performance indicators"
-        >
-          <div className="space-y-4">
-            <div className="p-4 bg-blue-50 rounded-xl border-l-4 border-[#69C0DC]">
-              <div className="flex items-start space-x-3">
-                <TrendingUp className="h-5 w-5 text-[#69C0DC] mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Total Objects Detected</p>
-                  <p className="text-xs text-gray-600 mt-1">{dashboardStats?.total_objects || 0} items identified across all scans</p>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">567 objects detected</p>
+                  <p className="text-xs text-muted-foreground">4 hours ago</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="w-2 h-2 bg-orange-500 rounded-full" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">12 high-risk items found</p>
+                  <p className="text-xs text-muted-foreground">6 hours ago</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="w-2 h-2 bg-purple-500 rounded-full" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">New user registration</p>
+                  <p className="text-xs text-muted-foreground">8 hours ago</p>
                 </div>
               </div>
             </div>
-            
-            <div className="p-4 bg-green-50 rounded-xl border-l-4 border-green-500">
-              <div className="flex items-start space-x-3">
-                <Zap className="h-5 w-5 text-green-500 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Validation Progress</p>
-                  <p className="text-xs text-gray-600 mt-1">{dashboardStats?.validated_objects || 0} objects validated by experts</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-4 bg-purple-50 rounded-xl border-l-4 border-purple-500">
-              <div className="flex items-start space-x-3">
-                <Users className="h-5 w-5 text-purple-500 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">User Engagement</p>
-                  <p className="text-xs text-gray-600 mt-1">{activeUsers} active users, {adminUsers} administrators</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-orange-50 rounded-xl border-l-4 border-orange-500">
-              <div className="flex items-start space-x-3">
-                <BarChart3 className="h-5 w-5 text-orange-500 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Processing Efficiency</p>
-                  <p className="text-xs text-gray-600 mt-1">{scans.filter(s => s.status === 'completed').length} completed out of {scans.length} total scans</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </ChartCard>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

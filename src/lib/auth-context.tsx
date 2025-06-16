@@ -56,7 +56,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     enabled: hasToken && isInitialized,
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  } as any);
 
   // Handle profile fetch errors
   useEffect(() => {
@@ -110,7 +110,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     <AuthContext.Provider
       value={{
         isAuthenticated,
-        profile,
+        profile: profile || null,
         isLoading,
         hasToken,
         login,

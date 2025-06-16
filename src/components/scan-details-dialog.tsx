@@ -55,7 +55,7 @@ interface ObjectDetailCardProps {
 
 function ObjectDetailCard({ object }: ObjectDetailCardProps) {
   const [correctedCategory, setCorrectedCategory] = useState(object.category);
-  const [correctedPrice, setCorrectedPrice] = useState(object.estimated_value.toString());
+  const [correctedPrice, setCorrectedPrice] = useState((object.estimated_value || 0).toString());
   const [validationMessage, setValidationMessage] = useState('');
   
   const validateObjectMutation = useValidateObject();
@@ -261,7 +261,7 @@ function ObjectDetailCard({ object }: ObjectDetailCardProps) {
 export function ScanDetailsDialog({ scanId, onClose }: ScanDetailsDialogProps) {
   const { data: scan, isLoading, error } = useScan(scanId!, {
     enabled: !!scanId,
-  });
+  } as any);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
