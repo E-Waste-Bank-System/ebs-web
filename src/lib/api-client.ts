@@ -172,6 +172,14 @@ class ApiClient {
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
     
+    // Debug logging
+    console.log('API Request:', {
+      url,
+      method: options.method || 'GET',
+      hasToken: !!this.token,
+      tokenLength: this.token ? this.token.length : 0
+    });
+    
     // Don't set Content-Type for FormData (browser will set it with boundary)
     const isFormData = options.body instanceof FormData;
     
@@ -187,6 +195,13 @@ class ApiClient {
     try {
       const response = await fetch(url, config);
       
+      console.log('API Response:', {
+        url,
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+      
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         
@@ -196,37 +211,42 @@ class ApiClient {
           if (contentType && contentType.includes('application/json')) {
             const errorData = await response.json();
             errorMessage = errorData.message || errorMessage;
+            console.log('API Error Data:', errorData);
           } else {
             // Handle non-JSON responses (like HTML error pages)
-            const errorText = await response.text();
-            if (errorText && errorText.length < 200) {
-              errorMessage = errorText;
-            }
+            const textData = await response.text();
+            console.log('API Error (non-JSON):', textData.substring(0, 200));
           }
         } catch (parseError) {
-          // If parsing fails, use the default error message
-          console.warn('Failed to parse error response:', parseError);
+          console.log('Could not parse error response:', parseError);
         }
         
-        const error = new Error(errorMessage);
-        (error as any).status = response.status;
-        (error as any).url = url;
-        throw error;
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      // Enhanced error logging
-      if (error instanceof Error) {
+        const apiError = new Error(errorMessage);
+        (apiError as any).status = response.status;
+        (apiError as any).url = url;
+        
+        // Enhanced error logging
         console.error(`API request failed: ${endpoint}`, {
           url,
-          error: error.message,
-          status: (error as any).status,
+          error: errorMessage,
+          status: response.status,
+          statusText: response.statusText,
         });
-      } else {
-        console.error(`API request failed: ${endpoint}`, error);
+        
+        throw apiError;
       }
+
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      } else {
+        return await response.text() as unknown as T;
+      }
+    } catch (error) {
+      console.error('API Request Error:', {
+        url,
+        error: error instanceof Error ? error.message : error
+      });
       throw error;
     }
   }
@@ -432,6 +452,107 @@ class ApiClient {
       },
       body: formData,
     });
+  }
+
+  // Retraining/Dataset methods
+  async getDatasets() {
+    return this.request<any[]>('/retraining/datasets');
+  }
+
+  async createDataset(data: { name: string; description?: string }) {
+    return this.request<any>('/retraining/datasets', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getDataset(id: string) {
+    return this.request<any>(`/retraining/datasets/${id}`);
+  }
+
+  async updateDataset(id: string, data: any) {
+    return this.request<any>(`/retraining/datasets/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteDataset(id: string) {
+    return this.request<any>(`/retraining/datasets/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async startTraining(datasetId: string) {
+    return this.request<any>(`/retraining/datasets/${datasetId}/train`, {
+      method: 'POST',
+    });
+  }
+
+  async getAnnotationTasks(datasetId: string) {
+    return this.request<any[]>(`/retraining/datasets/${datasetId}/tasks`);
+  }
+
+  async updateAnnotationTask(taskId: string, data: any) {
+    return this.request<any>(`/retraining/tasks/${taskId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async assignAnnotationTask(taskId: string) {
+    return this.request<any>(`/retraining/tasks/${taskId}/assign`, {
+      method: 'POST',
+    });
+  }
+
+  async addImagesToDataset(datasetId: string, objectIds: string[]) {
+    console.log('API Client - addImagesToDataset called with:', {
+      datasetId,
+      objectIds,
+      objectCount: objectIds?.length
+    });
+    
+    const payload = { objectIds };
+    console.log('API Client - Request payload:', payload);
+    
+    return this.request<any>(`/retraining/datasets/${datasetId}/images`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  // Helper to generate proxied image URLs to avoid CORS issues
+  getProxiedImageUrl(originalUrl: string): string {
+    if (!originalUrl) return originalUrl;
+    
+    // Only proxy Google Cloud Storage URLs
+    if (originalUrl.includes('storage.googleapis.com') || originalUrl.includes('storage.cloud.google.com')) {
+      const encodedUrl = encodeURIComponent(originalUrl);
+      return `${this.baseURL}/retraining/proxy-image?url=${encodedUrl}`;
+    }
+    
+    // Return original URL if it's not from GCS
+    return originalUrl;
+  }
+
+  async exportYoloDataset(objectIds: string[]): Promise<Blob> {
+    console.log('API Client - exportYoloDataset called with:', { objectIds, count: objectIds.length });
+    
+    const response = await fetch(`${this.baseURL}/retraining/export-yolo`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
+      },
+      body: JSON.stringify({ objectIds }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Export failed: ${response.statusText}`);
+    }
+
+    return await response.blob();
   }
 }
 

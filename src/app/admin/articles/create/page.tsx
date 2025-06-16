@@ -38,7 +38,7 @@ export default function CreateArticlePage() {
   const [excerpt, setExcerpt] = useState('');
   const [tags, setTags] = useState('');
   const [content, setContent] = useState<OutputData | undefined>();
-  const [status, setStatus] = useState<'draft' | 'published'>('draft');
+  const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('draft');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
@@ -211,20 +211,27 @@ export default function CreateArticlePage() {
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="publish-status" className="text-sm font-medium text-slate-700">Status</Label>
-                            <Select value={status} onValueChange={(value: 'draft' | 'published') => setStatus(value)}>
+                            <Select value={status} onValueChange={(value: 'draft' | 'published' | 'archived') => setStatus(value)}>
                               <SelectTrigger id="publish-status" className="w-full rounded-xl border-gray-200">
                                 <SelectValue placeholder="Select status" />
                               </SelectTrigger>
                               <SelectContent className="rounded-xl">
                                 <SelectItem value="draft">Draft</SelectItem>
                                 <SelectItem value="published">Published</SelectItem>
+                                <SelectItem value="archived">Archived</SelectItem>
                               </SelectContent>
                             </Select>
                         </div>
-                        <div className={`p-3 rounded-xl border ${status === 'published' ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+                        <div className={`p-3 rounded-xl border ${
+                          status === 'published' ? 'bg-green-50 border-green-200' : 
+                          status === 'archived' ? 'bg-red-50 border-red-200' :
+                          'bg-amber-50 border-amber-200'
+                        }`}>
                             <p className="text-xs font-medium">
                                {status === 'published' ? 
                                  '✅ This article will be visible to the public immediately.' : 
+                                 status === 'archived' ?
+                                 '🗄️ This article is archived and not visible to readers.' :
                                  '📝 This article is saved as a draft and not visible to readers.'
                                }
                             </p>

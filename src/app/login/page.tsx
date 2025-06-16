@@ -63,23 +63,56 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center space-y-4">
-          <div className="flex items-center justify-center">
-            <div className="p-3 bg-green-100 rounded-full">
-              <Recycle className="h-8 w-8 text-green-600" />
-            </div>
+    <div className="min-h-screen flex">
+      {/* Left Side - Welcome Section */}
+      <div className="flex-1 bg-gradient-to-br from-[#69C0DC] to-[#4AA8C2] flex flex-col justify-between p-8 m-2 rounded-xl text-white relative overflow-hidden">
+        {/* Logo */}
+        <div className="flex items-center space-x-3 z-10">
+          <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+            <Recycle className="h-8 w-8 text-white" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">E-Waste Bank System</CardTitle>
-            <CardDescription>
-              Sign in to access the admin dashboard
-            </CardDescription>
+            <h1 className="text-xl font-bold">E-Hub.</h1>
+            <p className="text-sm opacity-80">E-waste Bank System</p>
           </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
+        </div>
+
+        {/* Main Content */}
+        <div className="space-y-6 z-10">
+          <div className="space-y-4">
+            <h2 className="text-4xl font-bold leading-tight">
+              Mulai Kelola <span className="italic">e-waste</span><br />
+              dengan efisien.
+            </h2>
+            <p className="text-lg opacity-90 max-w-md">
+              Akses dashboard admin untuk memantau data pengguna dan mengoptimalkan pengelolaan sampah elektronik secara cerdas.
+            </p>
+          </div>
+        </div>
+
+        {/* Decorative Elements */}
+        <div className="absolute bottom-0 left-0 w-32 h-32 opacity-20">
+          <div className="w-full h-full bg-white/10 rounded-tr-3xl"></div>
+        </div>
+        <div className="absolute bottom-8 left-8 w-16 h-16 opacity-30">
+          <div className="w-4 h-4 bg-white rounded-full mb-2"></div>
+          <div className="w-0 h-0 border-l-8 border-r-8 border-b-12 border-l-transparent border-r-transparent border-b-white"></div>
+        </div>
+        <div className="absolute bottom-16 right-16 w-24 h-24 opacity-20">
+          <div className="w-full h-full bg-white/10 transform rotate-45 rounded-lg"></div>
+        </div>
+      </div>
+
+      {/* Right Side - Login Form */}
+      <div className="flex-1 bg-white flex items-center justify-center p-8">
+        <div className="w-full max-w-md space-y-8">
+          {/* Welcome Text */}
+          <div className="text-center space-y-2">
+            <h3 className="text-3xl font-bold text-gray-900">Selamat datang!</h3>
+            <p className="text-gray-600">Masuk untuk kelola e-waste dengan efisien!</p>
+          </div>
+
+          {/* Error Alert */}
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -87,85 +120,55 @@ export default function LoginPage() {
             </Alert>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-              />
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Username"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-[#69C0DC] focus:ring-[#69C0DC]"
+                />
+              </div>
+              
+              <div>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isLoading}
+                  className="h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-[#69C0DC] focus:ring-[#69C0DC]"
+                />
+              </div>
             </div>
             
             <Button 
               type="submit" 
-              className="w-full" 
+              className="w-full h-12 bg-[#69C0DC] hover:bg-[#5BADD1] text-white rounded-xl font-medium text-lg"
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Signing in...
                 </>
               ) : (
-                'Sign In'
+                'Login'
               )}
             </Button>
           </form>
 
-          <div className="space-y-3">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">Demo Accounts</span>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleDemoLogin('admin')}
-                disabled={isLoading}
-              >
-                Admin Demo
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleDemoLogin('user')}
-                disabled={isLoading}
-              >
-                User Demo
-              </Button>
-            </div>
-            
-            <div className="text-xs text-center text-muted-foreground space-y-1">
-              <p><strong>Admin:</strong> admin@ebs.com / admin123</p>
-              <p><strong>User:</strong> user@ebs.com / user123</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          
+        </div>
+      </div>
     </div>
   );
 } 

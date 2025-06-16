@@ -37,11 +37,11 @@ import {
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, current: true },
-  { name: 'Analytics', href: '/admin/analytics', icon: BarChart3, current: false },
   { name: 'E-Waste Scans', href: '/admin/e-waste', icon: Recycle, current: false },
-  { name: 'Users', href: '/admin/users', icon: Users, current: false },
   { name: 'Articles', href: '/admin/articles', icon: FileText, current: false },
-  { name: 'AI Training', href: '/admin/retraining', icon: Brain, current: false },
+  { name: 'Users', href: '/admin/users', icon: Users, current: false },
+  { name: 'Analytics', href: '/admin/analytics', icon: BarChart3, current: false },
+  { name: 'AI Model', href: '/admin/retraining', icon: Brain, current: false },
   { name: 'Settings', href: '/admin/settings', icon: Settings, current: false },
 ];
 
