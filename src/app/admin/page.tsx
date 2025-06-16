@@ -194,12 +194,28 @@ export default function AdminDashboard() {
     });
   }, [dashboardStats, weeklyScansData]);
 
-  const categoryData = objectStats?.by_category?.map((item: any, index: number) => ({
-    name: item.category,
-    value: Math.round((parseInt(item.count) / (objectStats.by_category?.reduce((sum: number, cat: any) => sum + parseInt(cat.count), 0) || 1)) * 100),
-    count: parseInt(item.count),
-    color: ['#69C0DC', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#6B7280'][index % 6]
-  })) || [];
+  const categoryData = React.useMemo(() => {
+    if (!objectStats?.by_category) return [];
+    
+    // Sort categories by count in descending order
+    const sortedCategories = [...objectStats.by_category].sort((a: any, b: any) => parseInt(b.count) - parseInt(a.count));
+    
+    // Calculate total count for percentage calculation
+    const totalCount = sortedCategories.reduce((sum: number, cat: any) => sum + parseInt(cat.count), 0);
+    
+    if (totalCount === 0) return [];
+    
+    // Create data for all categories (we'll slice in the display)
+    const result = sortedCategories.map((item: any, index: number) => ({
+      name: item.category,
+      value: Math.round((parseInt(item.count) / totalCount) * 100),
+      count: parseInt(item.count),
+      color: ['#69C0DC', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#6B7280', '#8B5CF6', '#F59E0B'][index % 8]
+    }));
+    
+    return result;
+  }, [objectStats?.by_category]);
+  
   const hasCategoryData = categoryData.some((cat) => cat.count > 0);
 
   return (
@@ -267,7 +283,7 @@ export default function AdminDashboard() {
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Weekly Activity */}
-        <Card className="lg:col-span-2 border-0 shadow-sm bg-white dark:bg-gray-800 rounded-2xl h-[400px]">
+        <Card className="lg:col-span-2 border-0 shadow-sm bg-white dark:bg-gray-800 rounded-2xl h-[500px]">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
               <div>
@@ -282,13 +298,13 @@ export default function AdminDashboard() {
               </Tabs>
             </div>
           </CardHeader>
-          <CardContent className="h-full p-0">
+          <CardContent className="h-full pb-6">
             {statsLoading ? (
               <div className="h-full flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-[#69C0DC]" />
               </div>
             ) : (
-              <div className="h-full w-full">
+              <div className="h-[380px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   {activeChartTab === 'scans' ? (
                     <AreaChart data={weeklyScansData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
@@ -374,45 +390,64 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Category Distribution */}
-        <Card className="border-0 shadow-sm h-[400px] bg-white dark:bg-gray-800">
-          <CardHeader>
+        <Card className="border-0 shadow-sm bg-white dark:bg-gray-800 h-[500px] flex flex-col">
+          <CardHeader className="pb-4 flex-shrink-0">
             <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">E-Waste Categories</CardTitle>
             <CardDescription className="dark:text-gray-400">Distribution by item type</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-6 pb-6 flex-1 flex flex-col overflow-hidden">
             {objectStatsLoading ? (
-              <div className="h-64 flex items-center justify-center">
+              <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="h-6 w-6 animate-spin text-[#69C0DC]" />
               </div>
             ) : hasCategoryData ? (
-              <div className="flex flex-col h-full w-full">
-                <div className="flex flex-1 flex-col sm:flex-row h-full w-full">
-                  {/* Pie Chart */}
-                  <div className="flex items-center justify-center sm:w-1/2 w-full h-64">
+              <div className="flex-1 flex flex-col min-h-0 justify-center items-center">
+                {/* Chart Section */}
+                <div className="flex justify-center mb-6 flex-shrink-0">
+                  <div className="w-full h-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <CategoryChart data={categoryData} />
+                      <CategoryChart data={categoryData.slice(0, 5)} />
                     </ResponsiveContainer>
                   </div>
-                  {/* Legend */}
-                  <div className="sm:w-1/2 w-full flex flex-col overflow-y-auto max-h-full pl-4 pr-2 mt-4 sm:mt-0">
-                    <div className="space-y-1">
-                      {categoryData.map((item: any, index: number) => (
-                        <div key={index} className="flex items-center justify-between text-xs py-1">
-                          <div className="flex items-center space-x-2">
-                            <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: item.color }} />
-                            <span className="text-xs text-gray-600 truncate max-w-[100px]">{item.name}</span>
+                </div>
+                
+                {/* Legend Section */}
+                <div className="flex-1 overflow-y-auto min-h-0 w-full">
+                  <div className="space-y-2">
+                    {categoryData.slice(0, 5).map((item: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-3 h-3 rounded-full flex-shrink-0" 
+                            style={{ backgroundColor: item.color }} 
+                          />
+                          <div className="min-w-0">
+                            <span className="text-sm font-semibold text-gray-900">{item.name}</span>
+                            <span className="text-xs text-gray-500 ml-2">• {item.count} items</span>
                           </div>
-                          <span className="text-xs font-medium text-gray-900">{item.value}%</span>
                         </div>
-                      ))}
-                    </div>
+                        <span className="text-sm font-bold text-gray-900 flex-shrink-0">{item.value}%</span>
+                      </div>
+                    ))}
+                    
+                    {/* Other categories summary */}
+                    {categoryData.length > 5 && (
+                      <div className="flex items-center justify-between py-2 px-3 bg-gray-100 rounded-lg border-t border-gray-300 mt-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full bg-gray-400 flex-shrink-0" />
+                          <span className="text-sm font-medium text-gray-600">
+                            {categoryData.length - 5} other types ({categoryData.slice(5).reduce((sum: number, cat: any) => sum + cat.count, 0)} items)
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="h-64 flex flex-col items-center justify-center text-gray-400">
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
                 <EmptyChart />
-                <span className="mt-4">No category data available</span>
+                <span className="mt-4 text-sm">No category data available</span>
               </div>
             )}
           </CardContent>
@@ -553,4 +588,4 @@ export default function AdminDashboard() {
       </div>
     </div>
   );
-} 
+}

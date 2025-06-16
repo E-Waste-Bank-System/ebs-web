@@ -54,6 +54,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     error: profileError 
   } = useProfile({
     enabled: hasToken && isInitialized,
+    queryKey: ['profile'],
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -110,7 +111,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     <AuthContext.Provider
       value={{
         isAuthenticated,
-        profile,
+        profile: profile ?? null,
         isLoading,
         hasToken,
         login,

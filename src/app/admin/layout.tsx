@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -104,10 +105,10 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
         <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white dark:bg-gray-800 shadow-xl">
           <div className="flex h-16 items-center justify-between px-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#69C0DC] to-[#5BA8C4] rounded-lg flex items-center justify-center shadow-lg">
-                <Zap className="h-5 w-5 text-white" />
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+                <Image src="/logo.svg" alt="EBS Logo" width={40} height={40} />
               </div>
-              <span className="text-xl font-bold text-gray-900 dark:text-white">EBS Admin</span>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">EBS</span>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)} className="dark:text-gray-300 dark:hover:text-white">
               <X className="h-5 w-5" />
@@ -148,8 +149,8 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
           {/* Logo */}
           <div className="flex items-center h-20 px-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#69C0DC] to-[#5BA8C4] rounded-xl flex items-center justify-center shadow-lg">
-                <Zap className="h-6 w-6 text-white" />
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
+                <Image src="/logo.svg" alt="EBS Logo" width={40} height={40} />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900 dark:text-white">EBS Admin</h1>

@@ -55,7 +55,7 @@ interface ObjectDetailCardProps {
 
 function ObjectDetailCard({ object }: ObjectDetailCardProps) {
   const [correctedCategory, setCorrectedCategory] = useState(object.category);
-  const [correctedPrice, setCorrectedPrice] = useState(object.estimated_value.toString());
+  const [correctedPrice, setCorrectedPrice] = useState((object.estimated_value ?? 0).toString());
   const [validationMessage, setValidationMessage] = useState('');
   
   const validateObjectMutation = useValidateObject();
@@ -67,7 +67,7 @@ function ObjectDetailCard({ object }: ObjectDetailCardProps) {
         data: { 
           notes: validationMessage,
           corrected_category: correctedCategory !== object.category ? correctedCategory : undefined,
-          corrected_value: parseFloat(correctedPrice) !== object.estimated_value ? parseFloat(correctedPrice) : undefined
+          corrected_value: parseFloat(correctedPrice) !== (object.estimated_value ?? 0) ? parseFloat(correctedPrice) : undefined
         }
       });
       setValidationMessage('');
@@ -133,7 +133,7 @@ function ObjectDetailCard({ object }: ObjectDetailCardProps) {
             <div className="flex justify-between">
               <span className="text-gray-600">Estimated Value:</span>
               <span className="font-semibold text-green-600">
-                {formatCurrency(object.estimated_value)}
+                {formatCurrency(object.estimated_value ?? 0)}
               </span>
             </div>
             <div className="flex justify-between">
@@ -261,6 +261,7 @@ function ObjectDetailCard({ object }: ObjectDetailCardProps) {
 export function ScanDetailsDialog({ scanId, onClose }: ScanDetailsDialogProps) {
   const { data: scan, isLoading, error } = useScan(scanId!, {
     enabled: !!scanId,
+    queryKey: ['scan', scanId],
   });
 
   const getStatusIcon = (status: string) => {

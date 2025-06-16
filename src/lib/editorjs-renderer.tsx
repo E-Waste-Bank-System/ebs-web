@@ -1,3 +1,4 @@
+import React from 'react';
 import { OutputData } from '@editorjs/editorjs';
 
 interface EditorBlock {
@@ -66,23 +67,33 @@ function renderBlock(block: EditorBlock, index: number) {
       );
 
     case 'header':
-      const HeaderTag = `h${block.data?.level || 2}` as keyof JSX.IntrinsicElements;
-      const headerClass = {
+      const level = Math.min(Math.max(block.data?.level || 2, 1), 6) as 1 | 2 | 3 | 4 | 5 | 6;
+      const headerClassMap: Record<1 | 2 | 3 | 4 | 5 | 6, string> = {
         1: 'text-4xl font-bold text-gray-900 mb-4',
         2: 'text-3xl font-bold text-gray-900 mb-3',
         3: 'text-2xl font-bold text-gray-900 mb-3',
         4: 'text-xl font-bold text-gray-900 mb-2',
         5: 'text-lg font-bold text-gray-900 mb-2',
         6: 'text-base font-bold text-gray-900 mb-2'
-      }[block.data?.level || 2] || 'text-2xl font-bold text-gray-900 mb-3';
+      };
+      const headerClass = headerClassMap[level];
 
-      return (
-        <HeaderTag 
-          key={index} 
-          className={headerClass}
-          dangerouslySetInnerHTML={{ __html: block.data?.text || '' }}
-        />
-      );
+      switch (level) {
+        case 1:
+          return <h1 key={index} className={headerClass} dangerouslySetInnerHTML={{ __html: block.data?.text || '' }} />;
+        case 2:
+          return <h2 key={index} className={headerClass} dangerouslySetInnerHTML={{ __html: block.data?.text || '' }} />;
+        case 3:
+          return <h3 key={index} className={headerClass} dangerouslySetInnerHTML={{ __html: block.data?.text || '' }} />;
+        case 4:
+          return <h4 key={index} className={headerClass} dangerouslySetInnerHTML={{ __html: block.data?.text || '' }} />;
+        case 5:
+          return <h5 key={index} className={headerClass} dangerouslySetInnerHTML={{ __html: block.data?.text || '' }} />;
+        case 6:
+          return <h6 key={index} className={headerClass} dangerouslySetInnerHTML={{ __html: block.data?.text || '' }} />;
+        default:
+          return <h2 key={index} className={headerClassMap[2]} dangerouslySetInnerHTML={{ __html: block.data?.text || '' }} />;
+      }
 
     case 'list':
       const ListTag = block.data?.style === 'ordered' ? 'ol' : 'ul';
