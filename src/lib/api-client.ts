@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://ebs-api-981332637673.asia-southeast2.run.app/api/v1';
 
 export interface PaginationParams {
   page?: number;
