@@ -12,8 +12,6 @@ const nextConfig = {
     // !! WARN !!
     ignoreBuildErrors: true,
   },
-  output: 'export',
-  trailingSlash: true,
   images: {
     unoptimized: true
   }
