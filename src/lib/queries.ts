@@ -230,7 +230,7 @@ export function useCreateArticle() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (data: Partial<Article>) => {
+    mutationFn: async (data: Partial<Article> | FormData) => {
       const response = await apiClient.createArticle(data);
       return response;
     },
@@ -244,7 +244,7 @@ export function useUpdateArticle() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<Article> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Article> | FormData }) => {
       const response = await apiClient.updateArticle(id, data);
       return response;
     },

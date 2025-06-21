@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCreateArticle, useUploadFile, useUploadArticleImage } from '@/lib/queries';
+import { useCreateArticle } from '@/lib/queries';
 import { ArticleStatus } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,69 +41,32 @@ export default function CreateArticlePage() {
   const [content, setContent] = useState<OutputData | undefined>();
   const [status, setStatus] = useState<ArticleStatus>(ArticleStatus.DRAFT);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [metaTitle, setMetaTitle] = useState('');
+  const [metaDescription, setMetaDescription] = useState('');
 
   const createArticleMutation = useCreateArticle();
-  const uploadFileMutation = useUploadFile();
-  const uploadArticleImageMutation = useUploadArticleImage();
 
-  const handleImageUpload = async (file: File) => {
+  const handleImageSelect = (file: File) => {
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      console.error('Invalid file type. Please select a valid image file (JPG, PNG, WebP)');
+      alert('Invalid file type. Please select a valid image file (JPG, PNG, WebP)');
       return;
     }
     
     // Validate file size (10MB limit)
     const maxSize = 10 * 1024 * 1024; // 10MB in bytes
     if (file.size > maxSize) {
-      console.error('File size must be less than 10MB');
+      alert('File size must be less than 10MB');
       return;
     }
 
     setImageFile(file);
     
-    // Try multiple upload approaches
-    try {
-      // First, try the standard uploadFile method (same as working e-waste uploads)
-      console.log('Trying standard upload method first...');
-      const standardResult = await uploadFileMutation.mutateAsync({ file, path: 'articles' });
-      setImageUrl(standardResult.url);
-      console.log('Standard upload successful');
-      return;
-    } catch (standardError: any) {
-      console.error('Standard upload failed:', standardError);
-      
-      try {
-        // Try the dedicated article image upload method
-        console.log('Trying dedicated article image upload...');
-        const dedicatedResult = await uploadArticleImageMutation.mutateAsync(file);
-        setImageUrl(dedicatedResult.url);
-        console.log('Dedicated upload successful');
-        return;
-      } catch (dedicatedError: any) {
-        console.error('Dedicated upload also failed:', dedicatedError);
-        
-        // Log comprehensive error information for debugging
-        console.error('All upload methods failed:', {
-          standardError: {
-            message: standardError?.message,
-            status: standardError?.status,
-            response: standardError?.response,
-          },
-          dedicatedError: {
-            message: dedicatedError?.message,
-            status: dedicatedError?.status,
-            response: dedicatedError?.response,
-          }
-        });
-        
-        // Show user-friendly error with more details
-        const errorMessage = `Image upload failed. Please try again or contact support if the issue persists. Details: ${standardError?.message || 'Unknown error'}`;
-        alert(errorMessage);
-      }
-    }
+    // Create preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,28 +74,28 @@ export default function CreateArticlePage() {
     try {
       const tagsArray = tags.split(',').map(tag => tag.trim()).filter(Boolean);
       
-      // Use the enum value directly
-      const mappedStatus = status;
-      
-      const requestData = {
-        title,
-        excerpt: excerpt || undefined,
-        content: content as OutputData,
-        status: mappedStatus,
-        featured_image: imageUrl || undefined,
-        tags: tagsArray,
-      };
+      // Create FormData for multipart/form-data request
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('content', JSON.stringify(content || { blocks: [] }));
+      if (excerpt) formData.append('excerpt', excerpt);
+      if (tagsArray.length > 0) formData.append('tags', tagsArray.join(','));
+      formData.append('status', status);
+      if (metaTitle) formData.append('meta_title', metaTitle);
+      if (metaDescription) formData.append('meta_description', metaDescription);
+      if (imageFile) formData.append('featured_image', imageFile);
       
       // Debug logging
-      console.log('Article create request data:', {
-        ...requestData,
-        statusType: typeof requestData.status,
-        statusValue: requestData.status,
-        originalStatus: status,
-        contentType: typeof requestData.content,
-      });
+      console.log('Article create request with FormData:');
+      for (const [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+        } else {
+          console.log(`${key}:`, value);
+        }
+      }
       
-      await createArticleMutation.mutateAsync(requestData);
+      await createArticleMutation.mutateAsync(formData);
       router.push('/admin/articles');
     } catch (error) {
       console.error('Failed to create article:', error);
@@ -169,7 +132,7 @@ export default function CreateArticlePage() {
             <Button 
                 type="submit" 
                 form="article-form"
-                disabled={createArticleMutation.isPending || uploadFileMutation.isPending || uploadArticleImageMutation.isPending}
+                disabled={createArticleMutation.isPending}
                 className="bg-[#69C0DC] hover:bg-[#5BA8C4] text-white rounded-xl shadow-lg"
             >
                 {createArticleMutation.isPending ? (
@@ -225,11 +188,31 @@ export default function CreateArticlePage() {
                             />
                         </div>
                         <div className="space-y-2">
+                            <Label htmlFor="meta-title" className="text-sm font-medium text-slate-700">SEO Meta Title</Label>
+                            <Input
+                                id="meta-title"
+                                value={metaTitle}
+                                onChange={(e) => setMetaTitle(e.target.value)}
+                                placeholder="SEO optimized title for search engines"
+                                className="bg-white border-gray-200 focus:border-[#69C0DC] focus:ring-[#69C0DC] rounded-xl"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="meta-description" className="text-sm font-medium text-slate-700">SEO Meta Description</Label>
+                            <Input
+                                id="meta-description"
+                                value={metaDescription}
+                                onChange={(e) => setMetaDescription(e.target.value)}
+                                placeholder="Brief description for search engine results"
+                                className="bg-white border-gray-200 focus:border-[#69C0DC] focus:ring-[#69C0DC] rounded-xl"
+                            />
+                        </div>
+                        <div className="space-y-2">
                             <Label className="text-sm font-medium text-slate-700">Featured Image</Label>
                             <div className="space-y-4">
                                 <div className="relative aspect-video rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center overflow-hidden">
-                                    {imageUrl ? (
-                                        <Image src={imageUrl} alt="Featured image preview" fill className="object-cover rounded-xl" />
+                                    {imagePreview ? (
+                                        <Image src={imagePreview} alt="Featured image preview" fill className="object-cover rounded-xl" />
                                     ) : (
                                         <div className="text-center text-slate-500">
                                             <Upload className="mx-auto h-8 w-8 mb-2" />
@@ -242,21 +225,9 @@ export default function CreateArticlePage() {
                                     type="file"
                                     id="image-upload"
                                     accept="image/*"
-                                    onChange={(e) => e.target.files && handleImageUpload(e.target.files[0])}
+                                    onChange={(e) => e.target.files && handleImageSelect(e.target.files[0])}
                                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#69C0DC]/10 file:text-[#69C0DC] hover:file:bg-[#69C0DC]/20 border-gray-200"
                                 />
-                                {(uploadFileMutation.isPending || uploadArticleImageMutation.isPending) && (
-                                    <div className="flex items-center space-x-2 text-sm text-slate-500 bg-blue-50 p-3 rounded-xl">
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        <span>Uploading image...</span>
-                                    </div>
-                                )}
-                                {(uploadFileMutation.isError || uploadArticleImageMutation.isError) && (
-                                    <div className="flex items-center space-x-2 text-sm text-red-600 bg-red-50 p-3 rounded-xl">
-                                        <AlertTriangle className="h-4 w-4" />
-                                        <span>Upload failed. Please try again.</span>
-                                    </div>
-                                )}
                             </div>
                         </div>
                         <div className="space-y-3">
@@ -330,7 +301,7 @@ export default function CreateArticlePage() {
                                 title: title || 'Article Title',
                                 excerpt: excerpt || 'Article excerpt will appear here...',
                                 content: content,
-                                featured_image: imageUrl || undefined,
+                                featured_image: imagePreview || undefined,
                                 status: status,
                                 tags: tags.split(',').map(tag => tag.trim()).filter(Boolean),
                                 author: {

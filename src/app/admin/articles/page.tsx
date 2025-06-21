@@ -137,14 +137,6 @@ export default function ArticlesPage() {
   const [statusFilter, setStatusFilter] = useState<ArticleStatus | 'all'>('all');
   const [tagFilter, setTagFilter] = useState<string>('');
   const [activeTab, setActiveTab] = useState('articles');
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newArticle, setNewArticle] = useState({
-    title: '',
-    excerpt: '',
-    content: '',
-    tags: '',
-    status: ArticleStatus.DRAFT
-  });
 
   // API queries
   const { 
@@ -160,7 +152,6 @@ export default function ArticlesPage() {
     tag: tagFilter || undefined
   });
 
-  const createArticleMutation = useCreateArticle();
   const deleteArticleMutation = useDeleteArticle();
 
   const articles = articlesResponse?.data || [];
@@ -170,41 +161,6 @@ export default function ArticlesPage() {
   const publishedArticles = articles.filter(a => a.status === ArticleStatus.PUBLISHED).length;
   const draftArticles = articles.filter(a => a.status === ArticleStatus.DRAFT).length;
   const totalViews = articles.reduce((sum, article) => sum + (article.view_count || 0), 0);
-
-  const handleCreateArticle = async () => {
-    try {
-      const tagsArray = newArticle.tags.split(',').map(tag => tag.trim()).filter(Boolean);
-      
-      await createArticleMutation.mutateAsync({
-        title: newArticle.title,
-        excerpt: newArticle.excerpt,
-        content: {
-          blocks: [
-            {
-              type: 'paragraph',
-              data: {
-                text: newArticle.content
-              }
-            }
-          ]
-        },
-        tags: tagsArray,
-        status: newArticle.status,
-      });
-      
-      setIsCreateDialogOpen(false);
-      setNewArticle({
-        title: '',
-        excerpt: '',
-        content: '',
-        tags: '',
-        status: ArticleStatus.DRAFT
-      });
-      refetch();
-    } catch (error) {
-      console.error('Failed to create article:', error);
-    }
-  };
 
   const handleDeleteArticle = async (id: string) => {
     if (confirm('Are you sure you want to delete this article?')) {

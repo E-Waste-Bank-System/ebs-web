@@ -52,6 +52,9 @@ export interface Article {
   status: ArticleStatus;
   tags: string[];
   view_count: number;
+  meta_title?: string;
+  meta_description?: string;
+  is_featured?: boolean;
   published_at?: string;
   created_at: string;
   updated_at: string;
@@ -330,14 +333,32 @@ class ApiClient {
     return this.request<Article>(`/admin/articles/${id}`);
   }
 
-  async createArticle(data: Partial<Article>) {
+  async createArticle(data: Partial<Article> | FormData) {
+    // Handle FormData for multipart/form-data requests (with file uploads)
+    if (data instanceof FormData) {
+      return this.request<Article>('/admin/articles', {
+        method: 'POST',
+        body: data,
+      });
+    }
+    
+    // Handle regular JSON requests (backward compatibility)
     return this.request<Article>('/admin/articles', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async updateArticle(id: string, data: Partial<Article>) {
+  async updateArticle(id: string, data: Partial<Article> | FormData) {
+    // Handle FormData for multipart/form-data requests (with file uploads)
+    if (data instanceof FormData) {
+      return this.request<Article>(`/admin/articles/${id}`, {
+        method: 'PATCH',
+        body: data,
+      });
+    }
+    
+    // Handle regular JSON requests (backward compatibility)
     return this.request<Article>(`/admin/articles/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
