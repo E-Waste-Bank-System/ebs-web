@@ -195,12 +195,25 @@ export default function AnalyticsPage() {
   console.log('Analytics Debug - Total value IDR:', totalValue);
 
   // Category breakdown from real data
+  const categoryColors = [
+    '#69C0DC', // Teal blue (primary)
+    '#10B981', // Emerald green
+    '#8B5CF6', // Violet
+    '#F59E0B', // Amber
+    '#EF4444', // Red
+    '#6366F1', // Indigo
+    '#EC4899', // Pink
+    '#84CC16', // Lime
+    '#6B7280', // Gray
+    '#14B8A6'  // Teal
+  ];
+  
   const categoryBreakdown = objectStats?.by_category?.map((item: any, index: number) => ({
     name: item.category,
     value: Math.round((parseInt(item.count) / (objectStats.by_category?.reduce((sum: number, cat: any) => sum + parseInt(cat.count), 0) || 1)) * 100),
     count: parseInt(item.count),
     total_value: parseFloat(item.total_value) || 0, // Use actual total_value from backend
-    color: ['#69C0DC', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#6B7280'][index % 6]
+    color: categoryColors[index % categoryColors.length]
   })) || [];
 
   // Processing status data - showing validation status instead of scan status
@@ -295,37 +308,74 @@ export default function AnalyticsPage() {
           description="Distribution of detected items by category"
           isLoading={objectStatsLoading}
         >
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <RechartsPieChart width={400} height={320}>
-                <Pie
-                  data={categoryBreakdown}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={120}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {categoryBreakdown.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value: any, name: any, props: any) => [
-                    `${props.payload.count} items (${value}%)`,
-                    props.payload.name
-                  ]}
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: 'none', 
-                    borderRadius: '12px', 
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
-                  }} 
-                /> 
-                <Legend />
-              </RechartsPieChart>
-            </ResponsiveContainer>
+          <div className="h-96 flex flex-col">
+            <div className="flex-1 px-4 py-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsPieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                  <Pie
+                    data={categoryBreakdown}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={85}
+                    paddingAngle={2}
+                    dataKey="value"
+                    stroke="rgba(255,255,255,0.8)"
+                    strokeWidth={2}
+                  >
+                    {categoryBreakdown.map((entry: any, index: number) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.color}
+                        className="hover:opacity-80 transition-opacity duration-200"
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: any, name: any, props: any) => [
+                      `${props.payload.count} items (${value}%)`,
+                      props.payload.name
+                    ]}
+                    labelFormatter={() => ''}
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: 'none', 
+                      borderRadius: '12px', 
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                      fontSize: '14px',
+                      fontWeight: '500'
+                    }}
+                    wrapperStyle={{
+                      filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.07))'
+                    }}
+                  />
+                </RechartsPieChart>
+              </ResponsiveContainer>
+            </div>
+            
+            {/* Custom Legend */}
+            <div className="mt-2 px-2 grid grid-cols-2 gap-2 text-sm">
+              {categoryBreakdown.slice(0, 8).map((entry: any, index: number) => (
+                <div key={index} className="flex items-center space-x-2 py-1">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm"
+                    style={{ backgroundColor: entry.color }}
+                  />
+                  <span className="text-gray-700 dark:text-gray-300 truncate font-medium text-xs">
+                    {entry.name}
+                  </span>
+                  <span className="text-gray-500 text-xs ml-auto font-medium">
+                    {entry.value}%
+                  </span>
+                </div>
+              ))}
+              {categoryBreakdown.length > 8 && (
+                <div className="flex items-center space-x-2 text-gray-500 py-1">
+                  <div className="w-3 h-3 rounded-full bg-gray-300" />
+                  <span className="text-xs">+{categoryBreakdown.length - 8} more</span>
+                </div>
+              )}
+            </div>
           </div>
         </ChartCard>
 

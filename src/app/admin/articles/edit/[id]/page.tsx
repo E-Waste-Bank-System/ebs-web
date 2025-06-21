@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useArticle, useUpdateArticle, useUploadFile } from '@/lib/queries';
+import { useArticle, useUpdateArticle, useUploadFile, useUploadArticleImage } from '@/lib/queries';
+import { ArticleStatus } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,11 +46,12 @@ export default function EditArticlePage() {
   const [excerpt, setExcerpt] = useState('');
   const [tags, setTags] = useState('');
   const [content, setContent] = useState<OutputData | undefined>();
-  const [status, setStatus] = useState<'draft' | 'published' | 'archived'>('draft');
+  const [status, setStatus] = useState<ArticleStatus>(ArticleStatus.DRAFT);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const updateArticleMutation = useUpdateArticle();
   const uploadFileMutation = useUploadFile();
+  const uploadArticleImageMutation = useUploadArticleImage();
 
   useEffect(() => {
     if (article) {
@@ -74,17 +76,65 @@ export default function EditArticlePage() {
         initialData = article.content as any;
       }
       setContent(initialData);
-      setStatus(article.status as 'draft' | 'published' | 'archived');
+      setStatus(article.status);
       setImageUrl(article.featured_image || null);
     }
   }, [article]);
 
   const handleImageUpload = async (file: File) => {
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      console.error('Invalid file type. Please select a valid image file (JPG, PNG, WebP)');
+      return;
+    }
+    
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+    if (file.size > maxSize) {
+      console.error('File size must be less than 10MB');
+      return;
+    }
+
+    // Try multiple upload approaches
     try {
-      const uploadedFile = await uploadFileMutation.mutateAsync({ file, path: 'articles' });
-      setImageUrl(uploadedFile.url);
-    } catch (error) {
-      console.error('Failed to upload image:', error);
+      // First, try the standard uploadFile method (same as working e-waste uploads)
+      console.log('Trying standard upload method first...');
+      const standardResult = await uploadFileMutation.mutateAsync({ file, path: 'articles' });
+      setImageUrl(standardResult.url);
+      console.log('Standard upload successful');
+      return;
+    } catch (standardError: any) {
+      console.error('Standard upload failed:', standardError);
+      
+      try {
+        // Try the dedicated article image upload method
+        console.log('Trying dedicated article image upload...');
+        const dedicatedResult = await uploadArticleImageMutation.mutateAsync(file);
+        setImageUrl(dedicatedResult.url);
+        console.log('Dedicated upload successful');
+        return;
+      } catch (dedicatedError: any) {
+        console.error('Dedicated upload also failed:', dedicatedError);
+        
+        // Log comprehensive error information for debugging
+        console.error('All upload methods failed:', {
+          standardError: {
+            message: standardError?.message,
+            status: standardError?.status,
+            response: standardError?.response,
+          },
+          dedicatedError: {
+            message: dedicatedError?.message,
+            status: dedicatedError?.status,
+            response: dedicatedError?.response,
+          }
+        });
+        
+        // Show user-friendly error with more details
+        const errorMessage = `Image upload failed. Please try again or contact support if the issue persists. Details: ${standardError?.message || 'Unknown error'}`;
+        alert(errorMessage);
+      }
     }
   };
 
@@ -93,20 +143,43 @@ export default function EditArticlePage() {
     try {
       const tagsArray = tags.split(',').map(tag => tag.trim()).filter(Boolean);
       
+      // Use the enum value directly
+      const mappedStatus = status;
+      
+      const requestData = {
+        title,
+        excerpt: excerpt || undefined,
+        content: content as OutputData,
+        status: mappedStatus,
+        featured_image: imageUrl || undefined,
+        tags: tagsArray,
+      };
+      
+      // Debug logging to identify the status issue
+      console.log('Article update request data:', {
+        ...requestData,
+        statusType: typeof requestData.status,
+        statusValue: requestData.status,
+        originalStatus: status,
+        contentType: typeof requestData.content,
+      });
+      
       await updateArticleMutation.mutateAsync({
         id,
-        data: {
-          title,
-          excerpt: excerpt || undefined,
-          content: content as OutputData,
-          status,
-          featured_image: imageUrl || undefined,
-          tags: tagsArray,
-        }
+        data: requestData
       });
       router.push('/admin/articles');
     } catch (error) {
       console.error('Failed to update article:', error);
+      // Log the full error details for debugging
+      if (error && typeof error === 'object') {
+        console.error('Error details:', {
+          message: (error as any).message,
+          status: (error as any).status,
+          url: (error as any).url,
+          response: (error as any).response,
+        });
+      }
     }
   };
 
@@ -177,7 +250,7 @@ export default function EditArticlePage() {
             <Button 
                 type="submit" 
                 form="article-form"
-                disabled={updateArticleMutation.isPending || uploadFileMutation.isPending}
+                disabled={updateArticleMutation.isPending || uploadFileMutation.isPending || uploadArticleImageMutation.isPending}
                 className="bg-[#69C0DC] hover:bg-[#5BA8C4] text-white rounded-xl shadow-lg"
             >
                 {updateArticleMutation.isPending ? (
@@ -253,13 +326,13 @@ export default function EditArticlePage() {
                                     onChange={(e) => e.target.files && handleImageUpload(e.target.files[0])}
                                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#69C0DC]/10 file:text-[#69C0DC] hover:file:bg-[#69C0DC]/20 border-gray-200"
                                 />
-                                {uploadFileMutation.isPending && (
+                                {(uploadFileMutation.isPending || uploadArticleImageMutation.isPending) && (
                                     <div className="flex items-center space-x-2 text-sm text-slate-500 bg-blue-50 p-3 rounded-xl">
                                         <Loader2 className="h-4 w-4 animate-spin" />
                                         <span>Uploading image...</span>
                                     </div>
                                 )}
-                                {uploadFileMutation.isError && (
+                                {(uploadFileMutation.isError || uploadArticleImageMutation.isError) && (
                                     <div className="flex items-center space-x-2 text-sm text-red-600 bg-red-50 p-3 rounded-xl">
                                         <AlertTriangle className="h-4 w-4" />
                                         <span>Upload failed. Please try again.</span>
@@ -292,26 +365,26 @@ export default function EditArticlePage() {
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="publish-status" className="text-sm font-medium text-slate-700">Status</Label>
-                            <Select value={status} onValueChange={(value: 'draft' | 'published' | 'archived') => setStatus(value)}>
+                            <Select value={status} onValueChange={(value: ArticleStatus) => setStatus(value)}>
                               <SelectTrigger id="publish-status" className="w-full rounded-xl border-gray-200">
                                 <SelectValue placeholder="Select status" />
                               </SelectTrigger>
                               <SelectContent className="rounded-xl">
-                                <SelectItem value="draft">Draft</SelectItem>
-                                <SelectItem value="published">Published</SelectItem>
-                                <SelectItem value="archived">Archived</SelectItem>
+                                <SelectItem value={ArticleStatus.DRAFT}>Draft</SelectItem>
+                                <SelectItem value={ArticleStatus.PUBLISHED}>Published</SelectItem>
+                                <SelectItem value={ArticleStatus.ARCHIVED}>Archived</SelectItem>
                               </SelectContent>
                             </Select>
                         </div>
                         <div className={`p-3 rounded-xl border ${
-                          status === 'published' ? 'bg-green-50 border-green-200' : 
-                          status === 'archived' ? 'bg-red-50 border-red-200' :
+                          status === ArticleStatus.PUBLISHED ? 'bg-green-50 border-green-200' : 
+                          status === ArticleStatus.ARCHIVED ? 'bg-red-50 border-red-200' :
                           'bg-amber-50 border-amber-200'
                         }`}>
                             <p className="text-xs font-medium">
-                               {status === 'published' ? 
+                               {status === ArticleStatus.PUBLISHED ? 
                                  '✅ This article will be visible to the public immediately.' : 
-                                 status === 'archived' ?
+                                 status === ArticleStatus.ARCHIVED ?
                                  '🗄️ This article is archived and not visible to readers.' :
                                  '📝 This article is saved as a draft and not visible to readers.'
                                }
@@ -348,7 +421,7 @@ export default function EditArticlePage() {
                                     avatar_url: undefined
                                 },
                                 created_at: article?.created_at || new Date().toISOString(),
-                                published_at: status === 'published' ? (article?.published_at || new Date().toISOString()) : undefined,
+                                published_at: status === ArticleStatus.PUBLISHED ? (article?.published_at || new Date().toISOString()) : undefined,
                                 view_count: article?.view_count || 0
                             }}
                             authorName={article?.author?.full_name || 'EBS Team'}

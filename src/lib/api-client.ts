@@ -1,5 +1,11 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
 
+export enum ArticleStatus {
+  DRAFT = 'draft',
+  PUBLISHED = 'published',
+  ARCHIVED = 'archived',
+}
+
 export interface PaginationParams {
   page?: number;
   limit?: number;
@@ -9,7 +15,7 @@ export interface PaginationParams {
 }
 
 export interface ArticleQueryParams extends PaginationParams {
-  status?: 'draft' | 'published' | 'archived';
+  status?: ArticleStatus;
   tag?: string;
 }
 
@@ -43,7 +49,7 @@ export interface Article {
   content: string | object;
   excerpt?: string;
   featured_image?: string;
-  status: 'draft' | 'published' | 'archived';
+  status: ArticleStatus;
   tags: string[];
   view_count: number;
   published_at?: string;
@@ -447,11 +453,109 @@ class ApiClient {
 
     return this.request<{ url: string }>('/upload', {
       method: 'POST',
-      headers: {
-        ...(this.token && { Authorization: `Bearer ${this.token}` }),
-      },
       body: formData,
     });
+  }
+
+  // Article Image Upload (with dedicated endpoint and comprehensive fallbacks)
+  async uploadArticleImage(file: File) {
+    try {
+      // Log the upload attempt
+      console.log('Attempting article image upload:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+
+      // First try the new dedicated article image endpoint
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const result = await this.request<{ url: string }>('/upload/article-image', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      console.log('Dedicated article image upload successful:', result);
+      return result;
+    } catch (dedicatedError: any) {
+      console.error('Dedicated article endpoint failed:', {
+        error: dedicatedError?.message,
+        status: dedicatedError?.status,
+        response: dedicatedError?.response
+      });
+      
+      // Fallback 1: Try the general upload endpoint
+      try {
+        console.log('Trying general upload endpoint...');
+        
+        const fallbackFormData = new FormData();
+        fallbackFormData.append('file', file);
+        fallbackFormData.append('path', 'articles');
+
+        const result = await this.request<{ url: string }>('/upload', {
+          method: 'POST',
+          body: fallbackFormData,
+        });
+        
+        console.log('General upload successful:', result);
+        return result;
+      } catch (generalError: any) {
+        console.error('General upload also failed:', generalError);
+        
+        // Fallback 2: Use the scans endpoint directly (since it works)
+        try {
+          console.log('Trying scans endpoint as final fallback...');
+          
+          const scansFormData = new FormData();
+          scansFormData.append('file', file);
+          scansFormData.append('original_filename', `article-${Date.now()}-${file.name}`);
+          
+          // Use the scans endpoint that we know works
+          const token = this.token;
+          const scansResponse = await fetch(`${this.baseURL}/scans`, {
+            method: 'POST',
+            headers: {
+              'Authorization': token ? `Bearer ${token}` : '',
+            },
+            body: scansFormData,
+          });
+
+          if (!scansResponse.ok) {
+            const errorText = await scansResponse.text();
+            throw new Error(`HTTP ${scansResponse.status}: ${errorText}`);
+          }
+
+          const scansResult = await scansResponse.json();
+          console.log('Scans endpoint fallback successful:', scansResult);
+          
+          // Extract the image URL from the scan result
+          if (scansResult.image_url) {
+            // Delete the scan record since we only wanted the uploaded image
+            try {
+              await fetch(`${this.baseURL}/scans/${scansResult.id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': token ? `Bearer ${token}` : '',
+                },
+              });
+              console.log('Cleaned up temporary scan record');
+            } catch (cleanupError) {
+              console.warn('Failed to clean up temporary scan record:', cleanupError);
+            }
+            
+            return { url: scansResult.image_url };
+          } else {
+            throw new Error('No image URL returned from scans endpoint');
+          }
+        } catch (scansError: any) {
+          console.error('Scans endpoint fallback also failed:', scansError);
+          
+          // If all approaches fail, throw a comprehensive error
+          throw new Error(`Image upload failed on all attempts: 1) Dedicated endpoint: ${dedicatedError?.message || 'Unknown error'} 2) General upload: ${generalError?.message || 'Unknown error'} 3) Scans fallback: ${scansError?.message || 'Unknown scans error'}`);
+        }
+      }
+    }
   }
 
   // Retraining/Dataset methods

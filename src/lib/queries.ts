@@ -464,4 +464,14 @@ export function useUploadFile() {
       return response;
     },
   });
+}
+
+// Article Image Upload Hook (with fallback handling)
+export function useUploadArticleImage() {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const response = await apiClient.uploadArticleImage(file);
+      return response;
+    },
+  });
 } 

@@ -61,6 +61,7 @@ import {
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { MobilePreview } from '@/components/ui/mobile-preview';
+import { ArticleStatus } from '@/lib/api-client';
 
 // Component for individual stat cards
 function StatCard({ 
@@ -103,26 +104,26 @@ function StatCard({
   );
 }
 
-const getStatusColor = (status: string) => {
+const getStatusColor = (status: ArticleStatus) => {
   switch (status) {
-    case 'published':
+    case ArticleStatus.PUBLISHED:
       return 'bg-green-100 text-green-800 border-green-200';
-    case 'draft':
+    case ArticleStatus.DRAFT:
       return 'bg-amber-100 text-amber-800 border-amber-200';
-    case 'archived':
+    case ArticleStatus.ARCHIVED:
       return 'bg-red-100 text-red-800 border-red-200';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200';
   }
 };
 
-const getStatusIcon = (status: string) => {
+const getStatusIcon = (status: ArticleStatus) => {
   switch (status) {
-    case 'published':
+    case ArticleStatus.PUBLISHED:
       return <CheckCircle className="h-4 w-4 text-green-500" />;
-    case 'draft':
+    case ArticleStatus.DRAFT:
       return <Edit className="h-4 w-4 text-amber-500" />;
-    case 'archived':
+    case ArticleStatus.ARCHIVED:
       return <AlertCircle className="h-4 w-4 text-red-500" />;
     default:
       return <Clock className="h-4 w-4 text-gray-500" />;
@@ -133,7 +134,7 @@ export default function ArticlesPage() {
   const router = useRouter();
   const { profile } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'draft' | 'published' | 'archived' | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<ArticleStatus | 'all'>('all');
   const [tagFilter, setTagFilter] = useState<string>('');
   const [activeTab, setActiveTab] = useState('articles');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -142,7 +143,7 @@ export default function ArticlesPage() {
     excerpt: '',
     content: '',
     tags: '',
-    status: 'draft' as 'draft' | 'published' | 'archived'
+    status: ArticleStatus.DRAFT
   });
 
   // API queries
@@ -166,8 +167,8 @@ export default function ArticlesPage() {
   const totalArticles = articlesResponse?.meta?.total || 0;
 
   // Calculate stats from actual data
-  const publishedArticles = articles.filter(a => a.status === 'published').length;
-  const draftArticles = articles.filter(a => a.status === 'draft').length;
+  const publishedArticles = articles.filter(a => a.status === ArticleStatus.PUBLISHED).length;
+  const draftArticles = articles.filter(a => a.status === ArticleStatus.DRAFT).length;
   const totalViews = articles.reduce((sum, article) => sum + (article.view_count || 0), 0);
 
   const handleCreateArticle = async () => {
@@ -197,7 +198,7 @@ export default function ArticlesPage() {
         excerpt: '',
         content: '',
         tags: '',
-        status: 'draft'
+        status: ArticleStatus.DRAFT
       });
       refetch();
     } catch (error) {
@@ -325,15 +326,15 @@ export default function ArticlesPage() {
                       className="pl-10 w-full sm:w-80 rounded-xl border-gray-200 focus:border-[#69C0DC] focus:ring-[#69C0DC]"
                     />
                   </div>
-                  <Select value={statusFilter} onValueChange={(value: 'draft' | 'published' | 'archived' | 'all') => setStatusFilter(value)}>
+                  <Select value={statusFilter} onValueChange={(value: ArticleStatus | 'all') => setStatusFilter(value)}>
                     <SelectTrigger className="w-full sm:w-40 rounded-xl border-gray-200">
                       <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
                       <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="published">Published</SelectItem>
-                      <SelectItem value="draft">Draft</SelectItem>
-                      <SelectItem value="archived">Archived</SelectItem>
+                      <SelectItem value={ArticleStatus.PUBLISHED}>Published</SelectItem>
+                      <SelectItem value={ArticleStatus.DRAFT}>Draft</SelectItem>
+                      <SelectItem value={ArticleStatus.ARCHIVED}>Archived</SelectItem>
                     </SelectContent>
                   </Select>
                   <Input
@@ -447,7 +448,7 @@ export default function ArticlesPage() {
                       </div>
                     </div>
 
-                    {article.status === 'published' && (
+                    {article.status === ArticleStatus.PUBLISHED && (
                       <div className="flex items-center justify-between text-sm text-gray-500 pt-2">
                         <div className="flex items-center space-x-4">
                           <div className="flex items-center space-x-1 bg-gray-50 dark:bg-gray-700 px-3 py-1 rounded-full">
