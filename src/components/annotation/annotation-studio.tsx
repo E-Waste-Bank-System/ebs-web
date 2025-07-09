@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import AnnotationCanvas from './annotation-canvas';
+import { AnnotationStatus } from '@/lib/api-client';
 
 interface AnnotationTask {
   id: string;
@@ -154,7 +155,7 @@ export default function AnnotationStudio({ datasetId, datasetName, onClose }: An
       try {
         const response = await apiClient.updateAnnotationTask(taskId, {
           annotations,
-          status,
+          status: status as AnnotationStatus,
           notes
         });
         console.log('Save annotation response:', response);

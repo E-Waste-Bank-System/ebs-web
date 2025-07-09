@@ -48,33 +48,33 @@ export default function ArticleViewer({ content, className = '' }: ArticleViewer
       data: parsedContent,
       tools: {
         header: {
-          class: Header,
+          class: Header as any,
           config: {
             levels: [1, 2, 3, 4, 5, 6],
             defaultLevel: 2
           }
         },
         paragraph: {
-          class: Paragraph
+          class: Paragraph as any
         },
         list: {
-          class: List
+          class: List as any
         },
         quote: {
-          class: Quote
+          class: Quote as any
         },
         code: {
-          class: Code
+          class: Code as any
         },
         linkTool: {
-          class: LinkTool
+          class: LinkTool as any
         },
         delimiter: Delimiter,
         table: {
-          class: Table
+          class: Table as any
         },
         embed: {
-          class: Embed,
+          class: Embed as any,
           config: {
             services: {
               youtube: true,
