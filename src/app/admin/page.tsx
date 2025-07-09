@@ -31,6 +31,9 @@ import { LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Cartesia
 import React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { StatCard } from '@/components/admin/StatCard';
+import { RecentActivity } from '@/components/admin/RecentActivity';
+import { SystemOverview } from '@/components/admin/SystemOverview';
 
 // Client-only chart component
 const ClientOnlyChart = dynamic(
@@ -47,76 +50,6 @@ const EmptyChart = dynamic(() => import('@/components/charts/empty-chart'), {
 const CategoryChart = dynamic(() => import('@/components/charts/category-chart'), {
   ssr: false,
 });
-
-// Component for individual stat cards
-function StatCard({ 
-  title, 
-  value, 
-  change, 
-  changeType, 
-  icon: Icon, 
-  color,
-  isLoading = false
-}: { 
-  title: string; 
-  value: string | number; 
-  change?: string; 
-  changeType?: 'increase' | 'decrease'; 
-  icon: any; 
-  color: string;
-  isLoading?: boolean;
-}) {
-  if (isLoading) {
-      return (
-    <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2 flex-1">
-            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-20" />
-            <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-16" />
-            <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-12" />
-          </div>
-          <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
-            <Icon className="h-6 w-6 text-white" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-  }
-
-  return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
-            <div className="flex items-baseline space-x-2">
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
-              {change && (
-                <div className="flex items-center space-x-1">
-                  {changeType === 'increase' ? (
-                    <ArrowUpRight className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <ArrowDownRight className="h-4 w-4 text-red-600" />
-                  )}
-                  <span className={`text-sm font-medium ${
-                    changeType === 'increase' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {change}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
-            <Icon className="h-6 w-6 text-white" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function AdminDashboard() {
   const [timeRange, setTimeRange] = useState('7d');
@@ -226,26 +159,7 @@ export default function AdminDashboard() {
           <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your e-waste system.</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="rounded-xl">
-                <Filter className="h-4 w-4 mr-2" />
-                Last 7 days
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="rounded-xl">
-              <DropdownMenuItem onClick={() => setTimeRange('1d')}>Last 24 hours</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTimeRange('7d')}>Last 7 days</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTimeRange('30d')}>Last 30 days</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTimeRange('90d')}>Last 90 days</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl shadow-lg">
-            <Download className="h-4 w-4 mr-2" />
-            Export Report
-          </Button>
-        </div>
+        {/* Removed filter dropdown and Export Report button as requested */}
       </div>
 
       {/* Stats Grid */}
@@ -254,28 +168,24 @@ export default function AdminDashboard() {
           title="Total Scans"
           value={dashboardStats?.total_scans || 0}
           icon={Recycle}
-          color="from-[#69C0DC] to-[#5BA8C4]"
           isLoading={statsLoading}
         />
         <StatCard
           title="Total Users"
           value={dashboardStats?.total_users || 0}
           icon={Users}
-          color="from-green-500 to-green-600"
           isLoading={statsLoading}
         />
         <StatCard
           title="Total Value"
           value={formatRupiah((dashboardStats?.total_estimated_value ?? 0) as number)}
           icon={DollarSign}
-          color="from-purple-500 to-purple-600"
           isLoading={statsLoading}
         />
         <StatCard
           title="Validation Rate"
           value={dashboardStats?.validation_rate ? `${Math.round(dashboardStats.validation_rate)}%` : '0%'}
           icon={Target}
-          color="from-orange-500 to-orange-600"
           isLoading={statsLoading}
         />
       </div>
@@ -454,137 +364,52 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activity */}
-        <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-xl font-bold text-gray-900">Recent Activity</CardTitle>
-                <CardDescription>Latest user submissions and scans</CardDescription>
-              </div>
-              <Link href="/admin/e-waste">
-                <Button variant="ghost" size="sm" className="rounded-xl">
-                  View All
-                </Button>
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {activityLoading ? (
-              <div className="space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="flex items-center space-x-4 p-3 rounded-xl">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
-                      <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
-                    </div>
-                    <div className="w-16 h-6 bg-gray-200 rounded animate-pulse" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              recentActivity?.recent_scans?.map((activity: any) => (
-                <div key={activity.id} className="flex items-center space-x-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                  <div className="w-10 h-10 bg-gradient-to-br from-[#69C0DC] to-[#5BA8C4] rounded-full flex items-center justify-center text-white font-medium text-sm">
-                    {activity.user_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{activity.user_name || 'Unknown User'}</p>
-                    <p className="text-sm text-gray-600 truncate">Scanned {activity.objects_count} items</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge 
-                      variant="secondary"
-                      className={`mb-1 ${
-                        activity.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                        activity.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}
-                    >
-                      {activity.status}
-                    </Badge>
-                    <p className="text-xs text-gray-500">{new Date(activity.created_at).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              )) || []
-            )}
-          </CardContent>
-        </Card>
-
-        {/* System Overview */}
-        <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-xl font-bold text-gray-900">System Overview</CardTitle>
-                <CardDescription>Current system status and metrics</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {statsLoading ? (
-              <div className="space-y-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-xl">
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
-                      <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
-                    </div>
-                    <div className="w-16 h-6 bg-gray-200 rounded animate-pulse" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Completed Scans</p>
-                    <p className="text-xs text-gray-600">Successfully processed</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-[#69C0DC]">{dashboardStats?.completed_scans || 0}</p>
-                    <p className="text-xs text-gray-500">scans</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Validated Objects</p>
-                    <p className="text-xs text-gray-600">Human verified items</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-green-600">{dashboardStats?.validated_objects || 0}</p>
-                    <p className="text-xs text-gray-500">objects</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">Total Objects</p>
-                    <p className="text-xs text-gray-600">All detected items</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-purple-600">{dashboardStats?.total_objects || 0}</p>
-                    <p className="text-xs text-gray-500">objects</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">System Status</p>
-                    <p className="text-xs text-gray-600">All systems operational</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge className="bg-green-100 text-green-800">Online</Badge>
-                  </div>
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      {/* Recent Activity & System Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <RecentActivity
+            activities={(recentActivity?.recent_scans || []).map((item: any) => ({
+              id: item.id,
+              user: {
+                name: item.user_name || 'Unknown User',
+                email: '',
+                avatar_url: undefined,
+              },
+              description: `Scanned ${typeof item.objects_count === 'number' ? item.objects_count : 0} item${item.objects_count === 1 ? '' : 's'}`,
+              date: new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              status: item.status || 'completed',
+            }))}
+            isLoading={activityLoading}
+            viewAllHref="/admin/e-waste"
+          />
+        </div>
+        <div>
+          <SystemOverview
+            metrics={[
+              {
+                label: 'Completed Scans',
+                value: dashboardStats?.total_scans ?? 0,
+                description: 'Successfully processed',
+              },
+              {
+                label: 'Validated Objects',
+                value: dashboardStats?.validated_objects ?? 0,
+                description: 'Human verified items',
+              },
+              {
+                label: 'Total Objects',
+                value: dashboardStats?.total_objects ?? 0,
+                description: 'All detected items',
+              },
+              {
+                label: 'System Status',
+                value: 'Online',
+                status: 'online',
+              },
+            ]}
+            isLoading={statsLoading}
+          />
+        </div>
       </div>
     </div>
   );

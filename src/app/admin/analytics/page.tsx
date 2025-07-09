@@ -52,9 +52,22 @@ import {
   Legend,
   RadialBarChart,
   RadialBar,
-  ComposedChart
+  ComposedChart,
+  BarChart as RechartsBarChart,
+  Bar as RechartsBar,
+  LabelList
 } from 'recharts';
 import React from 'react';
+import { saveAs } from 'file-saver';
+
+// Define the type for category entries at the top level
+interface CategoryEntry {
+  name: string;
+  value: number;
+  count: number;
+  total_value: number;
+  color: string;
+}
 
 // Component for metric cards
 function MetricCard({ 
@@ -175,17 +188,67 @@ const formatRupiah = (amount: number) => {
 export default function AnalyticsPage() {
   const [timeRange, setTimeRange] = useState('6m');
   const [selectedMetric, setSelectedMetric] = useState('scans');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // API queries
-  const { data: dashboardStats, isLoading: statsLoading } = useDashboardStats();
-  const { data: objectStats, isLoading: objectStatsLoading } = useObjectStats();
-  const { data: scansResponse, isLoading: scansLoading } = useScans({ page: 1, limit: 100 });
-  const { data: objectsResponse, isLoading: objectsLoading } = useObjects({ page: 1, limit: 500 });
-  const { data: profilesResponse, isLoading: profilesLoading } = useProfiles({ page: 1, limit: 100 });
+  const { data: dashboardStats, isLoading: statsLoading, refetch: refetchDashboard } = useDashboardStats();
+  const { data: objectStats, isLoading: objectStatsLoading, refetch: refetchObjectStats } = useObjectStats();
+  const { data: scansResponse, isLoading: scansLoading, refetch: refetchScans } = useScans({ page: 1, limit: 100 });
+  const { data: objectsResponse, isLoading: objectsLoading, refetch: refetchObjects } = useObjects({ page: 1, limit: 500 });
+  const { data: profilesResponse, isLoading: profilesLoading, refetch: refetchProfiles } = useProfiles({ page: 1, limit: 100 });
 
-  const scans = scansResponse?.data || [];
-  const objects = objectsResponse?.data || [];
-  const profiles = profilesResponse?.data || [];
+  // Helper to get date threshold
+  function getDateThreshold(range: string): Date | null {
+    const now = new Date();
+    switch (range) {
+      case '1m': return new Date(now.setMonth(now.getMonth() - 1));
+      case '3m': return new Date(now.setMonth(now.getMonth() - 3));
+      case '6m': return new Date(now.setMonth(now.getMonth() - 6));
+      case '1y': return new Date(now.setFullYear(now.getFullYear() - 1));
+      default: return null;
+    }
+  }
+
+  // Filter data by timeRange
+  const dateThreshold = getDateThreshold(timeRange);
+  const scans = (scansResponse?.data || []).filter(scan => {
+    if (!dateThreshold) return true;
+    return new Date(scan.created_at) >= dateThreshold;
+  });
+  const objects = (objectsResponse?.data || []).filter(obj => {
+    if (!dateThreshold) return true;
+    return new Date(obj.created_at) >= dateThreshold;
+  });
+  const profiles = (profilesResponse?.data || []).filter(profile => {
+    if (!dateThreshold) return true;
+    return new Date(profile.created_at) >= dateThreshold;
+  });
+
+  // Export Data as CSV
+  function exportData() {
+    let csv = 'Type,ID,Name/Email,Created At,Status/Role,Value/Count\n';
+    scans.forEach(scan => {
+      csv += `Scan,${scan.id},${scan.user?.full_name || ''},${scan.created_at},${scan.status},${scan.total_estimated_value}\n`;
+    });
+    objects.forEach(obj => {
+      csv += `Object,${obj.id},${obj.name || ''},${obj.created_at},${obj.is_validated ? 'Validated' : 'Not Validated'},${obj.estimated_value}\n`;
+    });
+    profiles.forEach(profile => {
+      csv += `Profile,${profile.id},${profile.email},${profile.created_at},${profile.role},\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    saveAs(blob, `analytics_export_${timeRange}_${new Date().toISOString()}.csv`);
+  }
+
+  // Refresh handler
+  function handleRefresh() {
+    setRefreshKey(k => k + 1);
+    refetchDashboard();
+    refetchObjectStats();
+    refetchScans();
+    refetchObjects();
+    refetchProfiles();
+  }
 
   // Calculate performance data
   const totalValue = dashboardStats?.total_estimated_value || 0; // Convert USD to IDR
@@ -222,16 +285,23 @@ export default function AnalyticsPage() {
     { name: 'Not Validated', value: objects.filter(obj => obj.is_validated === false).length, color: '#F59E0B' }
   ];
 
-  // Risk level data
-  const riskData = objectStats?.by_risk_level?.map((item: any) => ({
-    name: `Risk Level ${item.risk_level}`,
-    value: item.count,
-    color: item.risk_level <= 2 ? '#10B981' : item.risk_level <= 4 ? '#F59E0B' : '#EF4444'
-  })) || [];
+  // 1. Monthly E-Waste Breakdown improvements
+  const sortedCategories = [...categoryBreakdown].sort((a, b) => b.count - a.count);
+  const topCategories = sortedCategories.slice(0, 8);
+  const otherCount = sortedCategories.slice(8).reduce((sum, cat) => sum + cat.count, 0);
+  const chartData = [...topCategories, otherCount > 0 ? { name: 'Other', count: otherCount, color: '#CBD5E1' } : null].filter(Boolean);
+  const totalItems = sortedCategories.reduce((sum, cat) => sum + cat.count, 0);
 
-  // User activity data
-  const activeUsers = profiles.filter(p => p.is_active).length;
-  const adminUsers = profiles.filter(p => p.role === 'ADMIN' || p.role === 'SUPERADMIN').length;
+  // 2. Validation Status improvements
+  const validationTotal = statusData.reduce((sum, d) => sum + d.value, 0);
+  const validationChartData = statusData.map(d => ({ ...d, percent: validationTotal ? Math.round((d.value / validationTotal) * 100) : 0 }));
+
+  // 3. Value by Category improvements
+  const valueSorted = [...categoryBreakdown].sort((a, b) => b.total_value - a.total_value).slice(0, 5);
+  const valueTotal = valueSorted.reduce((sum, cat) => sum + cat.total_value, 0);
+
+  // Modern color palette for top 5 categories
+  const valueColors = ['#EC4899', '#8B5CF6', '#14B8A6', '#F472B6', '#6366F1'];
 
   return (
     <div className="p-6 space-y-8 min-h-screen">
@@ -253,11 +323,11 @@ export default function AnalyticsPage() {
               <SelectItem value="1y">Last Year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="rounded-xl">
+          <Button variant="outline" className="rounded-xl" onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl shadow-lg">
+          <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl shadow-lg" onClick={exportData}>
             <Download className="h-4 w-4 mr-2" />
             Export Data
           </Button>
@@ -276,7 +346,7 @@ export default function AnalyticsPage() {
         />
         <MetricCard
           title="Active Users"
-          value={activeUsers}
+          value={profiles.filter(p => p.is_active).length}
           icon={Users}
           color="from-green-500 to-green-600"
           subtitle="Currently active"
@@ -302,178 +372,138 @@ export default function AnalyticsPage() {
 
       {/* Main Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Category Distribution */}
+        {/* Monthly E-Waste Breakdown (Bar Chart) */}
         <ChartCard
-          title="E-Waste Categories"
-          description="Distribution of detected items by category"
+          title="Monthly E-Waste Breakdown"
+          description="Breakdown of detected items by category for the selected month"
           isLoading={objectStatsLoading}
         >
           <div className="h-96 flex flex-col">
-            <div className="flex-1 px-4 py-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsPieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                  <Pie
-                    data={categoryBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={85}
-                    paddingAngle={2}
-                    dataKey="value"
-                    stroke="rgba(255,255,255,0.8)"
-                    strokeWidth={2}
-                  >
-                    {categoryBreakdown.map((entry: any, index: number) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.color}
-                        className="hover:opacity-80 transition-opacity duration-200"
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value: any, name: any, props: any) => [
-                      `${props.payload.count} items (${value}%)`,
-                      props.payload.name
-                    ]}
-                    labelFormatter={() => ''}
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: 'none', 
-                      borderRadius: '12px', 
-                      boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                      fontSize: '14px',
-                      fontWeight: '500'
-                    }}
-                    wrapperStyle={{
-                      filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.07))'
-                    }}
-                  />
-                </RechartsPieChart>
-              </ResponsiveContainer>
-            </div>
-            
-            {/* Custom Legend */}
-            <div className="mt-2 px-2 grid grid-cols-2 gap-2 text-sm">
-              {categoryBreakdown.slice(0, 8).map((entry: any, index: number) => (
-                <div key={index} className="flex items-center space-x-2 py-1">
-                  <div 
-                    className="w-3 h-3 rounded-full flex-shrink-0 shadow-sm"
-                    style={{ backgroundColor: entry.color }}
-                  />
-                  <span className="text-gray-700 dark:text-gray-300 truncate font-medium text-xs">
-                    {entry.name}
-                  </span>
-                  <span className="text-gray-500 text-xs ml-auto font-medium">
-                    {entry.value}%
-                  </span>
-                </div>
-              ))}
-              {categoryBreakdown.length > 8 && (
-                <div className="flex items-center space-x-2 text-gray-500 py-1">
-                  <div className="w-3 h-3 rounded-full bg-gray-300" />
-                  <span className="text-xs">+{categoryBreakdown.length - 8} more</span>
-                </div>
-              )}
-            </div>
+            <ResponsiveContainer width="100%" height="100%">
+              <RechartsBarChart data={chartData} margin={{ top: 30, right: 30, left: 10, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="name" stroke="#64748B" fontSize={13} tickLine={false} axisLine={false} label={{ value: 'Category', position: 'insideBottom', offset: -25, fontSize: 14, fill: '#64748B' }} />
+                <YAxis stroke="#64748B" fontSize={13} tickLine={false} axisLine={false} label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 14, fill: '#64748B' }} />
+                <Tooltip formatter={(value, name, props) => [
+                  `${value} items (${totalItems ? Math.round((Number(value)/totalItems)*100) : 0}%)`,
+                  props.payload.name
+                ]} />
+                <RechartsBar dataKey="count" radius={[8, 8, 0, 0]} label={{ position: 'top', fill: '#334155', fontWeight: 600, fontSize: 13 }}>
+                  {chartData.filter((entry): entry is { name: string; color: string; count: number } => !!entry && typeof entry.name === 'string' && typeof entry.count === 'number' && typeof entry.color === 'string').map((entry, idx) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </RechartsBar>
+              </RechartsBarChart>
+            </ResponsiveContainer>
           </div>
         </ChartCard>
 
-        {/* Validation Status */}
+        {/* Validation Status (Bar Chart) */}
         <ChartCard
           title="Validation Status"
           description="Validation status of detected objects"
           isLoading={objectsLoading}
         >
-          <div className="h-80">
+          <div className="h-96 flex flex-col">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={statusData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
-                <XAxis dataKey="name" stroke="#64748B" fontSize={12} />
-                <YAxis stroke="#64748B" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: 'none', 
-                    borderRadius: '12px', 
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.1)' 
-                  }} 
-                />
-                <Bar dataKey="value" fill="#69C0DC" radius={[4, 4, 0, 0]} />
-              </BarChart>
+              <RechartsBarChart data={validationChartData} margin={{ top: 30, right: 30, left: 10, bottom: 40 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="name" stroke="#64748B" fontSize={13} tickLine={false} axisLine={false} label={{ value: 'Status', position: 'insideBottom', offset: -25, fontSize: 14, fill: '#64748B' }} />
+                <YAxis stroke="#64748B" fontSize={13} tickLine={false} axisLine={false} label={{ value: 'Count', angle: -90, position: 'insideLeft', fontSize: 14, fill: '#64748B' }} />
+                <Tooltip formatter={(value, name, props) => [`${value} objects (${props.payload.percent}%)`, props.payload.name]} />
+                <RechartsBar dataKey="value" radius={[8, 8, 0, 0]} label={{ position: 'top', fill: '#334155', fontWeight: 600, fontSize: 13 }}>
+                  {validationChartData.map((entry, idx) => (
+                    <Cell key={entry.name} fill={entry.name === 'Validated' ? '#10B981' : '#F59E0B'} />
+                  ))}
+                </RechartsBar>
+              </RechartsBarChart>
             </ResponsiveContainer>
-          </div>
-        </ChartCard>
-      </div>
-
-      {/* Detailed Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Category Value Breakdown */}
-        <ChartCard
-          title="Value by Category"
-          description="Estimated value distribution"
-          isLoading={objectStatsLoading}
-        >
-          <div className="space-y-4">
-            {categoryBreakdown.slice(0, 5).map((category: any) => {
-              const categoryValue = category.total_value || 0;
-              const percentage = totalValue > 0 ? Math.round((categoryValue / totalValue) * 100) : 0;
-              return (
-                <div key={category.name} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
-                    <span className="font-medium text-gray-900">{category.name}</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="h-2 rounded-full bg-[#69C0DC]"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium text-gray-900 w-20 text-right">
-                      {formatRupiah(categoryValue)}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+            <div className="flex gap-4 mt-2 justify-end text-xs">
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-emerald-400 inline-block" /> Validated</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-amber-400 inline-block" /> Not Validated</span>
+            </div>
           </div>
         </ChartCard>
 
-        {/* Risk Level Distribution */}
-        <ChartCard
-          title="Risk Assessment"
-          description="Objects by risk level"
-          isLoading={objectStatsLoading}
-        >
-          <div className="space-y-4">
-            {riskData.map((risk: any, index: number) => {
-              const total = riskData.reduce((sum: number, r: any) => sum + r.value, 0);
-              const percentage = total > 0 ? Math.round((risk.value / total) * 100) : 0;
-              return (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: risk.color }} />
-                    <span className="font-medium text-gray-900">{risk.name}</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="h-2 rounded-full"
-                        style={{ 
-                          backgroundColor: risk.color,
-                          width: `${percentage}%` 
-                        }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium text-gray-900 w-12 text-right">{risk.value}</span>
-                  </div>
-                </div>
-              );
-            })}
+      {/* Value by Category (Horizontal Bar Chart with Legend + Tooltip) */}
+      <ChartCard
+        title="Top 5 Value by Category"
+        description="Estimated value distribution"
+        isLoading={objectStatsLoading}
+      >
+        <div className="h-80 flex flex-col">
+          <ResponsiveContainer width="99%" height="100%">
+            <RechartsBarChart
+              data={valueSorted.map((cat, idx) => {
+                const totalValueNum = typeof cat.total_value === 'number' ? cat.total_value : Number(cat.total_value) || 0;
+                return {
+                  ...cat,
+                  total_value: totalValueNum,
+                  color: valueColors[idx % valueColors.length],
+                  percent: valueTotal > 0 ? Math.round((totalValueNum / valueTotal) * 100) : 0,
+                };
+              })}
+              layout="vertical"
+              margin={{ top: 0, right: 24, left: 24, bottom: 20 }}
+              barCategoryGap={32}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
+              <XAxis type="number" stroke="#64748B" fontSize={13} tickLine={false} axisLine={false} tickFormatter={(v: number) => typeof v === 'number' ? v.toLocaleString('id-ID') : ''} />
+              {/* Hide Y axis labels for a clean look */}
+              <YAxis type="category" dataKey="name" stroke="#64748B" fontSize={15} tickLine={false} axisLine={false} width={0} tick={false} />
+              <Tooltip
+                formatter={(value, name, props) => [
+                  formatRupiah(Number(value)),
+                  props.payload.name + ` (${props.payload.percent}%)`
+                ]}
+                contentStyle={{ backgroundColor: 'white', border: 'none', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontSize: '14px', fontWeight: '500' }}
+              />
+              <RechartsBar dataKey="total_value" radius={16} minPointSize={8} barSize={32}>
+                {valueSorted.filter((entry): entry is CategoryEntry => !!entry && typeof entry.name === 'string' && typeof entry.total_value === 'number').map((entry, idx) => (
+                  <Cell key={entry && entry.name ? entry.name : String(idx)} fill={valueColors[idx % valueColors.length]} />
+                ))}
+                <LabelList
+                  dataKey="total_value"
+                  position="right"
+                  content={({ x, y, width, value, index }: { x?: number | string; y?: number | string; width?: number | string; value?: number | string; index?: number }) => {
+                    if (typeof x !== "number" || typeof y !== "number" || typeof width !== "number") return null;
+                    const numValue = Number(value);
+                    if (isNaN(numValue)) return null;
+                    const percent = valueTotal > 0 ? Math.round((numValue / valueTotal) * 100) : 0;
+                    const labelX = x + width + 8;
+                    const labelY = y;
+                    return (
+                      <g>
+                        <text
+                          x={labelX}
+                          y={labelY + 12}
+                          fontSize="14"
+                          fontWeight="bold"
+                          fill="#1e293b"
+                        >
+                          {formatRupiah(numValue)}
+                        </text>
+                        <text x={labelX} y={labelY + 26} fontSize="12" fill="#64748B">
+                          {percent}%
+                        </text>
+                      </g>
+                    );
+                  }}
+                />
+              </RechartsBar>
+            </RechartsBarChart>
+          </ResponsiveContainer>
+          {/* Color-coded legend below the chart */}
+          <div className="flex flex-wrap gap-4 justify-center">
+            {valueSorted.map((cat, idx) => (
+              <div key={cat.name} className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: valueColors[idx % valueColors.length] }} />
+                <span>{cat.name}</span>
+              </div>
+            ))}
           </div>
-        </ChartCard>
+        </div>
+      </ChartCard>
 
         {/* System Insights */}
         <ChartCard
@@ -506,7 +536,7 @@ export default function AnalyticsPage() {
                 <Users className="h-5 w-5 text-purple-500 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">User Engagement</p>
-                  <p className="text-xs text-gray-600 mt-1">{activeUsers} active users, {adminUsers} administrators</p>
+                  <p className="text-xs text-gray-600 mt-1">{profiles.filter(p => p.is_active).length} active users, {profiles.filter(p => p.role === 'ADMIN' || p.role === 'SUPERADMIN').length} administrators</p>
                 </div>
               </div>
             </div>

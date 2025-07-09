@@ -8,10 +8,15 @@ import {
   type Article, 
   type Scan, 
   type DetectedObject, 
-  type RetrainingData, 
+  type RetrainingData,
+  type Dataset,
+  type AnnotationTask,
   type DashboardStats,
   type ObjectStats,
-  type RecentActivity
+  type RecentActivity,
+  type RetrainingType,
+  type AnnotationStatus,
+  type DatasetStatus
 } from './api-client';
 
 // Query Keys
@@ -43,6 +48,14 @@ export const queryKeys = {
   
   // Retraining
   retrainingData: (params?: PaginationParams) => ['retraining', params] as const,
+  
+  // Datasets
+  datasets: () => ['datasets'] as const,
+  dataset: (id: string) => ['datasets', id] as const,
+  
+  // Annotation Tasks
+  annotationTasks: (datasetId: string) => ['annotation-tasks', datasetId] as const,
+  annotationTask: (id: string) => ['annotation-tasks', id] as const,
 } as const;
 
 // Auth Hooks
@@ -235,6 +248,7 @@ export function useCreateArticle() {
       return response;
     },
     onSuccess: () => {
+      // Invalidate all articles queries to ensure the list updates
       queryClient.invalidateQueries({ queryKey: ['articles'] });
     },
   });
@@ -250,6 +264,7 @@ export function useUpdateArticle() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.article(data.id), data);
+      // Invalidate all articles queries to ensure the list updates
       queryClient.invalidateQueries({ queryKey: ['articles'] });
     },
   });
@@ -264,6 +279,7 @@ export function useDeleteArticle() {
       return id;
     },
     onSuccess: () => {
+      // Invalidate all articles queries to ensure the list updates
       queryClient.invalidateQueries({ queryKey: ['articles'] });
     },
   });
@@ -303,7 +319,6 @@ export function useCreateScan() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scans'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
     },
   });
 }
@@ -318,14 +333,13 @@ export function useDeleteScan() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scans'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
     },
   });
 }
 
 // Object Hooks
 export function useObjects(
-  params?: PaginationParams & { scanId?: string; category?: string }, 
+  params?: PaginationParams & { scanId?: string; category?: string; isValidated?: boolean }, 
   options?: UseQueryOptions<PaginatedResponse<DetectedObject>>
 ) {
   return useQuery({
@@ -354,7 +368,10 @@ export function useValidateObject() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, data }: { 
+    mutationFn: async ({ 
+      id, 
+      data 
+    }: { 
       id: string; 
       data: { 
         notes?: string;
@@ -368,8 +385,6 @@ export function useValidateObject() {
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.object(data.id), data);
       queryClient.invalidateQueries({ queryKey: ['objects'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
-      queryClient.invalidateQueries({ queryKey: queryKeys.objectStats });
     },
   });
 }
@@ -390,11 +405,8 @@ export function useCreateObject() {
       const response = await apiClient.createObject(data);
       return response;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['objects'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.scan(data.scan_id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
-      queryClient.invalidateQueries({ queryKey: queryKeys.objectStats });
     },
   });
 }
@@ -410,8 +422,20 @@ export function useRejectObject() {
     onSuccess: (data) => {
       queryClient.setQueryData(queryKeys.object(data.id), data);
       queryClient.invalidateQueries({ queryKey: ['objects'] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboardStats });
-      queryClient.invalidateQueries({ queryKey: queryKeys.objectStats });
+    },
+  });
+}
+
+export function useDeleteObject() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.deleteObject(id);
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['objects'] });
     },
   });
 }
@@ -456,7 +480,217 @@ export function useDeleteRetrainingData() {
   });
 }
 
-// File Upload Hook
+// Dataset Hooks
+export function useDatasets(options?: UseQueryOptions<Dataset[]>) {
+  return useQuery({
+    queryKey: queryKeys.datasets(),
+    queryFn: async () => {
+      const response = await apiClient.getDatasets();
+      return response;
+    },
+    ...options,
+  });
+}
+
+export function useDataset(id: string, options?: UseQueryOptions<Dataset>) {
+  return useQuery({
+    queryKey: queryKeys.dataset(id),
+    queryFn: async () => {
+      const response = await apiClient.getDataset(id);
+      return response;
+    },
+    enabled: !!id,
+    ...options,
+  });
+}
+
+export function useCreateDataset() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (data: { name: string; description?: string; configuration?: Record<string, any> }) => {
+      const response = await apiClient.createDataset(data);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+    },
+  });
+}
+
+export function useUpdateDataset() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Dataset> }) => {
+      const response = await apiClient.updateDataset(id, data);
+      return response;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.dataset(data.id), data);
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+    },
+  });
+}
+
+export function useDeleteDataset() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.deleteDataset(id);
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+    },
+  });
+}
+
+export function useAddImagesToDataset() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ datasetId, objectIds }: { datasetId: string; objectIds: string[] }) => {
+      const response = await apiClient.addImagesToDataset(datasetId, objectIds);
+      return response;
+    },
+    onSuccess: (_, { datasetId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dataset(datasetId) });
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+    },
+  });
+}
+
+export function useStartTraining() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (datasetId: string) => {
+      const response = await apiClient.startTraining(datasetId);
+      return response;
+    },
+    onSuccess: (_, datasetId) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dataset(datasetId) });
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+    },
+  });
+}
+
+export function useCompleteTraining() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      datasetId, 
+      metrics 
+    }: { 
+      datasetId: string; 
+      metrics: {
+        final_map?: number;
+        precision?: number;
+        recall?: number;
+        epochs_completed?: number;
+        best_weights_path?: string;
+      } 
+    }) => {
+      const response = await apiClient.completeTraining(datasetId, metrics);
+      return response;
+    },
+    onSuccess: (_, { datasetId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dataset(datasetId) });
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+    },
+  });
+}
+
+export function useFailTraining() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ datasetId, error }: { datasetId: string; error: string }) => {
+      const response = await apiClient.failTraining(datasetId, error);
+      return response;
+    },
+    onSuccess: (_, { datasetId }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.dataset(datasetId) });
+      queryClient.invalidateQueries({ queryKey: ['datasets'] });
+    },
+  });
+}
+
+// Annotation Task Hooks
+export function useAnnotationTasks(datasetId: string, options?: UseQueryOptions<AnnotationTask[]>) {
+  return useQuery({
+    queryKey: queryKeys.annotationTasks(datasetId),
+    queryFn: async () => {
+      const response = await apiClient.getAnnotationTasks(datasetId);
+      return response;
+    },
+    enabled: !!datasetId,
+    ...options,
+  });
+}
+
+export function useAnnotationTask(id: string, options?: UseQueryOptions<AnnotationTask>) {
+  return useQuery({
+    queryKey: queryKeys.annotationTask(id),
+    queryFn: async () => {
+      const response = await apiClient.getAnnotationTask(id);
+      return response;
+    },
+    enabled: !!id,
+    ...options,
+  });
+}
+
+export function useUpdateAnnotationTask() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      taskId, 
+      data 
+    }: { 
+      taskId: string; 
+      data: {
+        annotations?: Array<{
+          category: string;
+          bbox: { x: number; y: number; width: number; height: number };
+          confidence?: number;
+          is_ai_generated: boolean;
+          verified: boolean;
+        }>;
+        status?: AnnotationStatus;
+        notes?: string;
+      } 
+    }) => {
+      const response = await apiClient.updateAnnotationTask(taskId, data);
+      return response;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.annotationTask(data.id), data);
+      queryClient.invalidateQueries({ queryKey: ['annotation-tasks'] });
+    },
+  });
+}
+
+export function useAssignAnnotationTask() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      const response = await apiClient.assignAnnotationTask(taskId);
+      return response;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(queryKeys.annotationTask(data.id), data);
+      queryClient.invalidateQueries({ queryKey: ['annotation-tasks'] });
+    },
+  });
+}
+
+// File Upload Hooks
 export function useUploadFile() {
   return useMutation({
     mutationFn: async ({ file, path }: { file: File; path?: string }) => {
@@ -466,7 +700,6 @@ export function useUploadFile() {
   });
 }
 
-// Article Image Upload Hook (with fallback handling)
 export function useUploadArticleImage() {
   return useMutation({
     mutationFn: async (file: File) => {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useArticles, useCreateArticle, useDeleteArticle } from '@/lib/queries';
 import { useAuth } from '@/lib/auth-context';
@@ -56,7 +56,8 @@ import {
   Loader2,
   Calendar,
   User,
-  BarChart3
+  BarChart3,
+  RefreshCw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
@@ -137,6 +138,7 @@ export default function ArticlesPage() {
   const [statusFilter, setStatusFilter] = useState<ArticleStatus | 'all'>('all');
   const [tagFilter, setTagFilter] = useState<string>('');
   const [activeTab, setActiveTab] = useState('articles');
+  const [showRefreshMessage, setShowRefreshMessage] = useState(false);
 
   // API queries
   const { 
@@ -151,6 +153,19 @@ export default function ArticlesPage() {
     status: statusFilter === 'all' ? undefined : statusFilter,
     tag: tagFilter || undefined
   });
+
+  // Debug logging
+  console.log('Articles page state:', {
+    articlesCount: articlesResponse?.data?.length || 0,
+    totalArticles: articlesResponse?.meta?.total || 0,
+    statusFilter,
+    searchTerm,
+    tagFilter,
+    isLoading,
+    error: error?.message
+  });
+
+
 
   const deleteArticleMutation = useDeleteArticle();
 
@@ -171,6 +186,12 @@ export default function ArticlesPage() {
         console.error('Failed to delete article:', error);
       }
     }
+  };
+
+  const handleRefresh = () => {
+    refetch();
+    setShowRefreshMessage(true);
+    setTimeout(() => setShowRefreshMessage(false), 2000);
   };
 
   const formatDate = (dateString: string) => {
@@ -204,309 +225,255 @@ export default function ArticlesPage() {
   }
 
   return (
-    <div className="p-6 space-y-8 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-6 lg:space-y-0">
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Content Management</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">Create, manage, and publish articles about e-waste and sustainability.</p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" className="rounded-xl border-gray-200 hover:border-gray-300">
-            <Download className="h-4 w-4 mr-2" />
-            Export Articles
-          </Button>
-          <Link href="/admin/articles/create">
-            <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl shadow-lg">
-              <Plus className="h-4 w-4 mr-2" />
-              New Article
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Articles"
-          value={totalArticles.toString()}
-          subtitle="All content pieces"
-          icon={FileText}
-          color="from-[#69C0DC] to-[#5BA8C4]"
-        />
-        <StatCard
-          title="Published"
-          value={publishedArticles.toString()}
-          subtitle="Live articles"
-          icon={CheckCircle}
-          color="from-green-500 to-green-600"
-        />
-        <StatCard
-          title="Total Views"
-          value={totalViews.toLocaleString()}
-          subtitle="All time readers"
-          icon={Eye}
-          color="from-purple-500 to-purple-600"
-        />
-        <StatCard
-          title="Draft Articles"
-          value={draftArticles.toString()}
-          subtitle="Pending review"
-          icon={Edit}
-          color="from-amber-500 to-amber-600"
-        />
-      </div>
-
-      {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-6 sm:space-y-0">
-          <TabsList className="grid w-full sm:w-auto grid-cols-3 rounded-xl bg-gray-100 shadow-sm border">
-            <TabsTrigger value="articles" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">All Articles</TabsTrigger>
-            <TabsTrigger value="analytics" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">Analytics</TabsTrigger>
-            <TabsTrigger value="media" className="rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">Media Library</TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="articles" className="space-y-8">
-          {/* Filters */}
-          <Card className="border-0 shadow-sm bg-white">
-            <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-6 lg:space-y-0">
-                <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <Input
-                      placeholder="Search articles..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 w-full sm:w-80 rounded-xl border-gray-200 focus:border-[#69C0DC] focus:ring-[#69C0DC]"
-                    />
-                  </div>
-                  <Select value={statusFilter} onValueChange={(value: ArticleStatus | 'all') => setStatusFilter(value)}>
-                    <SelectTrigger className="w-full sm:w-40 rounded-xl border-gray-200">
-                      <SelectValue placeholder="All Status" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value={ArticleStatus.PUBLISHED}>Published</SelectItem>
-                      <SelectItem value={ArticleStatus.DRAFT}>Draft</SelectItem>
-                      <SelectItem value={ArticleStatus.ARCHIVED}>Archived</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    placeholder="Filter by tag..."
-                    value={tagFilter}
-                    onChange={(e) => setTagFilter(e.target.value)}
-                    className="w-full sm:w-40 rounded-xl border-gray-200 focus:border-[#69C0DC] focus:ring-[#69C0DC]"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" className="rounded-xl border-gray-200">
-                    <Filter className="h-4 w-4 mr-2" />
-                    More Filters
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Loading State */}
-          {isLoading && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i} className="border-0 shadow-sm bg-white dark:bg-gray-800 overflow-hidden">
-                  <div className="aspect-video bg-gray-200 dark:bg-gray-600 animate-pulse" />
-                  <CardContent className="p-6 space-y-4">
-                    <div className="space-y-3">
-                      <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse" />
-                      <div className="h-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse" />
-                      <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse w-3/4" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+    <div className="min-h-screen bg-white pb-12">
+      <div className="max-w-7xl mx-auto w-full px-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pt-8">
+          {showRefreshMessage && (
+            <div className="absolute top-4 right-4 bg-green-100 border border-green-200 text-green-800 px-4 py-2 rounded-lg shadow-lg z-50">
+              Articles refreshed!
             </div>
           )}
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-1">Content Management</h1>
+            <p className="text-base text-slate-500">Create, manage, and publish articles about e-waste and sustainability.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              className="rounded-2xl border-gray-200 hover:border-gray-300 h-12 px-6 font-semibold"
+              onClick={handleRefresh}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-5 w-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+              {isLoading ? 'Refreshing...' : 'Refresh'}
+            </Button>
+            <Button variant="outline" className="rounded-2xl border-gray-200 hover:border-gray-300 h-12 px-6 font-semibold">
+              <Download className="h-5 w-5 mr-2" />
+              Export Articles
+            </Button>
+            <Link href="/admin/articles/create">
+              <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-2xl shadow-lg px-6 h-12 text-base font-semibold">
+                <Plus className="h-5 w-5 mr-2" />
+                New Article
+              </Button>
+            </Link>
+          </div>
+        </div>
 
-          {/* Articles Grid */}
-          {!isLoading && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-              {articles.map((article) => (
-                <Card key={article.id} className="border-0 shadow-sm hover:shadow-xl transition-all duration-300 group bg-white dark:bg-gray-800 overflow-hidden">
-                  <div className="relative">
-                    <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center">
-                      {article.featured_image ? (
-                        <img 
-                          src={article.featured_image} 
-                          alt={article.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="bg-gradient-to-br from-[#69C0DC]/10 to-[#5BA8C4]/10 w-full h-full flex items-center justify-center">
-                          <ImageIcon className="h-12 w-12 text-[#69C0DC]/40" />
-                        </div>
-                      )}
-                    </div>
-                    <Badge className={`absolute top-4 right-4 ${getStatusColor(article.status)} border shadow-sm`}>
-                      <div className="flex items-center space-x-1">
-                        {getStatusIcon(article.status)}
-                        <span className="capitalize font-medium">{article.status}</span>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-0 mb-12">
+          <StatCard
+            title="Total Articles"
+            value={totalArticles.toString()}
+            subtitle="All content pieces"
+            icon={FileText}
+            color="from-[#69C0DC] to-[#5BA8C4]"
+          />
+          <StatCard
+            title="Published"
+            value={publishedArticles.toString()}
+            subtitle="Live articles"
+            icon={CheckCircle}
+            color="from-green-500 to-green-600"
+          />
+          <StatCard
+            title="Total Views"
+            value={totalViews.toLocaleString()}
+            subtitle="All time readers"
+            icon={Eye}
+            color="from-purple-500 to-purple-600"
+          />
+          <StatCard
+            title="Draft Articles"
+            value={draftArticles.toString()}
+            subtitle="Pending review"
+            icon={Edit}
+            color="from-amber-500 to-amber-600"
+          />
+        </div>
+
+        {/* Filters Row */}
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <div className="flex-1 flex items-center gap-3">
+              <div className="relative w-full max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                <Input
+                  placeholder="Search articles..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="pl-10 rounded-2xl border-gray-200 h-12"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={v => setStatusFilter(v as any)}>
+                <SelectTrigger className="w-40 rounded-2xl border-gray-200 h-12">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl">
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value={ArticleStatus.PUBLISHED}>Published</SelectItem>
+                  <SelectItem value={ArticleStatus.DRAFT}>Draft</SelectItem>
+                  <SelectItem value={ArticleStatus.ARCHIVED}>Archived</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Tag filter..."
+                value={tagFilter}
+                onChange={e => setTagFilter(e.target.value)}
+                className="rounded-2xl border-gray-200 max-w-xs h-12"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Articles Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mt-0">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-xl bg-white overflow-hidden animate-pulse">
+                <div className="aspect-video bg-gray-200 rounded-t-2xl"></div>
+                <CardContent className="flex flex-col flex-1 px-6 pt-6 pb-0 gap-4">
+                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mt-0">
+            {articles.map((article) => (
+              <Card key={article.id} className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-xl bg-white overflow-hidden">
+                <div className="relative">
+                  <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-t-2xl">
+                    {article.featured_image ? (
+                      <img 
+                        src={article.featured_image} 
+                        alt={article.title}
+                        className="w-full h-full object-cover rounded-t-2xl"
+                      />
+                    ) : (
+                      <div className="bg-gradient-to-br from-[#69C0DC]/10 to-[#5BA8C4]/10 w-full h-full flex items-center justify-center rounded-t-2xl">
+                        <ImageIcon className="h-12 w-12 text-[#69C0DC]/40" />
                       </div>
-                    </Badge>
+                    )}
                   </div>
-                  
-                  <CardContent className="p-6 space-y-5">
-                    <div className="space-y-3">
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white line-clamp-2 group-hover:text-[#69C0DC] transition-colors leading-tight">
-                        {article.title}
-                      </h3>
-                      {article.excerpt && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">{article.excerpt}</p>
-                      )}
-                    </div>
-
+                  <Badge className={`absolute top-4 left-4 rounded-full px-3 py-1 shadow-lg bg-white/90 ${getStatusColor(article.status)} font-medium text-xs flex items-center gap-1 z-10`}>
+                    {getStatusIcon(article.status)}
+                    <span className="capitalize">{article.status}</span>
+                  </Badge>
+                </div>
+                <CardContent className="flex flex-col flex-1 px-6 pt-6 pb-0 gap-4">
+                  <div className="flex-1 flex flex-col gap-3">
+                    <h3 className="text-lg font-semibold text-slate-900 line-clamp-2 group-hover:text-[#69C0DC] transition-colors leading-tight">
+                      {article.title}
+                    </h3>
+                    {article.excerpt && (
+                      <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed mb-2">{article.excerpt}</p>
+                    )}
                     {article.tags && article.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {article.tags.slice(0, 3).map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs rounded-full px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                      <div className="flex flex-wrap gap-2 mt-2 mb-1">
+                        {article.tags.slice(0, 2).map((tag, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs rounded-full px-3 py-1 bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors">
                             <Tag className="h-3 w-3 mr-1" />
                             {tag}
                           </Badge>
                         ))}
-                        {article.tags.length > 3 && (
-                          <Badge variant="secondary" className="text-xs rounded-full px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
-                            +{article.tags.length - 3} more
+                        {article.tags.length > 2 && (
+                          <Badge variant="secondary" className="text-xs rounded-full px-3 py-1 bg-gray-100 text-gray-700">
+                            +{article.tags.length - 2} more
                           </Badge>
                         )}
                       </div>
                     )}
-
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
-                      <div className="flex items-center space-x-3">
-                        <Avatar className="h-9 w-9 ring-2 ring-gray-100 dark:ring-gray-700">
-                          <AvatarImage src={article.author?.avatar_url} />
-                          <AvatarFallback className="bg-[#69C0DC] text-white text-sm font-medium">
-                            {getAuthorInitials(article.author?.full_name || profile?.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">
-                            {article.author?.full_name || profile?.full_name || 'Unknown Author'}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center mt-1">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {article.published_at ? 
-                              `Published ${formatDate(article.published_at)}` : 
-                              `Created ${formatDate(article.created_at)}`
-                            }
-                          </p>
-                        </div>
-                      </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mt-2">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-8 w-8 ring-1 ring-gray-100">
+                        <AvatarImage src={article.author?.avatar_url} />
+                        <AvatarFallback className="bg-[#69C0DC] text-white text-xs font-medium">
+                          {getAuthorInitials(article.author?.full_name || profile?.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium text-slate-700">
+                        {article.author?.full_name || profile?.full_name || 'Unknown Author'}
+                      </span>
+                      <span className="flex items-center gap-1 text-slate-400">
+                        <Calendar className="h-3 w-3" />
+                        {article.published_at ? 
+                          formatDate(article.published_at) : 
+                          formatDate(article.created_at)
+                        }
+                      </span>
                     </div>
-
-                    {article.status === ArticleStatus.PUBLISHED && (
-                      <div className="flex items-center justify-between text-sm text-gray-500 pt-2">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-1 bg-gray-50 dark:bg-gray-700 px-3 py-1 rounded-full">
-                            <Eye className="h-4 w-4" />
-                            <span className="font-medium">{article.view_count?.toLocaleString() || 0}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between pt-4 space-x-3">
-                      <Link href={`/admin/articles/edit/${article.id}`} className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full rounded-xl border-gray-200 dark:border-gray-600 hover:border-[#69C0DC] hover:text-[#69C0DC] dark:text-gray-300 dark:hover:text-[#69C0DC]">
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </Button>
-                      </Link>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="rounded-xl shadow-lg border-gray-200">
-                          <DropdownMenuItem className="rounded-lg">
-                            <Share2 className="mr-2 h-4 w-4" />
-                            Share
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="rounded-lg">
-                            <Download className="mr-2 h-4 w-4" />
-                            Export
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-red-600 rounded-lg hover:bg-red-50"
-                            onClick={() => handleDeleteArticle(article.id)}
-                            disabled={deleteArticleMutation.isPending}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-
-          {/* Empty State */}
-          {!isLoading && articles.length === 0 && (
-            <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
-              <CardContent className="p-16 text-center">
-                <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                  <FileText className="h-10 w-10 text-gray-400" />
+                    <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full text-xs text-slate-600">
+                      <Eye className="h-4 w-4" />
+                      {article.view_count?.toLocaleString() || 0}
+                    </span>
+                  </div>
+                </CardContent>
+                <div className="border-t border-gray-100 px-6 py-4 flex items-center gap-2 mt-auto bg-white">
+                  <Link href={`/admin/articles/edit/${article.id}`} className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full rounded-2xl border-gray-200 hover:border-[#69C0DC] hover:text-[#69C0DC]">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="rounded-2xl hover:bg-gray-100">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="rounded-2xl shadow-lg border-gray-200">
+                      <DropdownMenuItem className="rounded-lg">
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Share
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="rounded-lg">
+                        <Download className="mr-2 h-4 w-4" />
+                        Export
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-red-600 rounded-lg hover:bg-red-50"
+                        onClick={() => handleDeleteArticle(article.id)}
+                        disabled={deleteArticleMutation.isPending}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">No articles found</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
-                  {searchTerm || statusFilter || tagFilter ? 
-                    'No articles match your current filters. Try adjusting your search criteria.' : 
-                    'Get started by creating your first article to share knowledge about e-waste and sustainability.'
-                  }
-                </p>
-                <Link href="/admin/articles/create">
-                  <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl shadow-lg">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Article
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
-        <TabsContent value="analytics" className="space-y-6">
-          <Card className="border-0 shadow-lg bg-white">
+        {/* Empty State */}
+        {!isLoading && articles.length === 0 && (
+          <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
             <CardContent className="p-16 text-center">
-              <div className="w-20 h-20 mx-auto mb-6 bg-purple-100 rounded-full flex items-center justify-center">
-                <BarChart3 className="h-10 w-10 text-purple-500" />
+              <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                <FileText className="h-10 w-10 text-gray-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Analytics Coming Soon</h3>
-              <p className="text-gray-600 max-w-md mx-auto">
-                Detailed analytics and insights for your articles will be available here. Track views, engagement, and performance metrics.
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">No articles found</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+                {searchTerm || statusFilter !== 'all' || tagFilter
+                  ? 'No articles match your current filters. Try adjusting your search criteria.'
+                  : 'Get started by creating your first article to share knowledge about e-waste and sustainability.'}
               </p>
+              <Link href="/admin/articles/create">
+                <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl shadow-lg">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Article
+                </Button>
+              </Link>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="media" className="space-y-6">
-          <Card className="border-0 shadow-lg bg-white">
-            <CardContent className="p-16 text-center">
-              <div className="w-20 h-20 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
-                <ImageIcon className="h-10 w-10 text-blue-500" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Media Library Coming Soon</h3>
-              <p className="text-gray-600 max-w-md mx-auto">
-                Manage your images and media files here. Upload, organize, and optimize your content assets.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
     </div>
   );
 } 

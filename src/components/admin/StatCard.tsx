@@ -10,7 +10,23 @@ interface StatCardProps {
   isLoading?: boolean
 }
 
+// Helper to format numbers compactly (e.g., 1.5K, 2.3M)
+function formatCompactNumber(value: number): string {
+  return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
+
 export function StatCard({ title, value, icon: Icon, change, isLoading }: StatCardProps) {
+  // If value is a string and starts with 'Rp', try to compact the number part
+  let displayValue = value;
+  if (typeof value === 'number') {
+    displayValue = formatCompactNumber(value);
+  } else if (typeof value === 'string' && value.startsWith('Rp')) {
+    // Extract the number part and compact it
+    const num = parseInt(value.replace(/[^\d]/g, ''));
+    if (!isNaN(num) && num >= 1000) {
+      displayValue = `Rp ${formatCompactNumber(num)}`;
+    }
+  }
   return (
     <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -25,7 +41,7 @@ export function StatCard({ title, value, icon: Icon, change, isLoading }: StatCa
           </div>
         ) : (
           <>
-            <div className="text-2xl font-bold text-slate-800">{value}</div>
+            <div className="text-2xl font-bold text-slate-800">{displayValue}</div>
             {change && <p className="text-xs text-slate-500 mt-1">{change}</p>}
           </>
         )}

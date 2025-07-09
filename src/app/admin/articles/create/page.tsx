@@ -106,8 +106,11 @@ export default function CreateArticlePage() {
           status: (error as any).status,
           url: (error as any).url,
           response: (error as any).response,
+          stack: (error as any).stack,
         });
       }
+      // Show user-friendly error message
+      alert(`Failed to create article: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
     }
   };
 

@@ -1,9 +1,33 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 export enum ArticleStatus {
   DRAFT = 'draft',
   PUBLISHED = 'published',
   ARCHIVED = 'archived',
+}
+
+export enum DatasetStatus {
+  DRAFT = 'draft',
+  ANNOTATING = 'annotating',
+  READY = 'ready',
+  TRAINING = 'training',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+}
+
+export enum AnnotationStatus {
+  PENDING = 'pending',
+  IN_PROGRESS = 'in_progress',
+  COMPLETED = 'completed',
+  REVIEWED = 'reviewed',
+  REJECTED = 'rejected',
+}
+
+export enum RetrainingType {
+  CORRECTION = 'correction',
+  VALIDATION = 'validation',
+  IMPROVEMENT = 'improvement',
+  ANNOTATION = 'annotation',
 }
 
 export interface PaginationParams {
@@ -38,6 +62,11 @@ export interface Profile {
   role: 'USER' | 'ADMIN' | 'SUPERADMIN';
   is_active: boolean;
   last_login_at?: string;
+  email_verified?: boolean;
+  phone?: string;
+  bio?: string;
+  location?: string;
+  preferences?: Record<string, any>;
   created_at: string;
   updated_at: string;
 }
@@ -56,14 +85,10 @@ export interface Article {
   meta_description?: string;
   is_featured?: boolean;
   published_at?: string;
+  author_id: string;
+  author?: Profile;
   created_at: string;
   updated_at: string;
-  author?: {
-    id: string;
-    full_name?: string;
-    email: string;
-    avatar_url?: string;
-  };
 }
 
 export interface Scan {
@@ -75,10 +100,12 @@ export interface Scan {
   error_message?: string;
   total_estimated_value: number;
   objects_count: number;
+  processed_at?: string;
   user_id: string;
   user?: Profile;
   objects?: DetectedObject[];
   created_at: string;
+  updated_at: string;
 }
 
 export interface DetectedObject {
@@ -105,29 +132,73 @@ export interface DetectedObject {
   scan_id: string;
   scan?: Scan;
   created_at: string;
+  updated_at: string;
 }
 
 export interface RetrainingData {
   id: string;
-  name?: string;
-  description?: string;
-  type: 'correction' | 'validation' | 'improvement';
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  data_source: string;
-  sample_count?: number;
-  final_accuracy?: number;
-  training_duration?: number;
+  type: RetrainingType;
   original_category: string;
   corrected_category?: string;
   original_confidence: number;
   corrected_value?: number;
   correction_data: Record<string, any>;
+  annotation_data?: Record<string, any>;
   notes?: string;
   submitted_by: string;
   is_processed: boolean;
   processed_at?: string;
-  object_id: string;
+  object_id?: string;
+  dataset_id?: string;
+  annotation_task_id?: string;
   created_at: string;
+  updated_at: string;
+}
+
+export interface Dataset {
+  id: string;
+  name: string;
+  description?: string;
+  status: DatasetStatus;
+  configuration?: Record<string, any>;
+  total_images: number;
+  annotated_images: number;
+  total_annotations: number;
+  created_by: string;
+  training_started_at?: string;
+  training_completed_at?: string;
+  training_metrics?: {
+    final_map?: number;
+    precision?: number;
+    recall?: number;
+    epochs_completed?: number;
+    best_weights_path?: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AnnotationTask {
+  id: string;
+  dataset_id: string;
+  object_id?: string;
+  image_url: string;
+  original_filename?: string;
+  status: AnnotationStatus;
+  annotations?: Array<{
+    id: string;
+    category: string;
+    bbox: { x: number; y: number; width: number; height: number };
+    confidence?: number;
+    is_ai_generated: boolean;
+    verified: boolean;
+  }>;
+  assigned_to?: string;
+  assigned_at?: string;
+  completed_at?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DashboardStats {
@@ -210,52 +281,21 @@ class ApiClient {
         statusText: response.statusText,
         ok: response.ok
       });
-      
+
       if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        
-        try {
-          // Try to parse JSON error response
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const errorData = await response.json();
-            errorMessage = errorData.message || errorMessage;
-            console.log('API Error Data:', errorData);
-          } else {
-            // Handle non-JSON responses (like HTML error pages)
-            const textData = await response.text();
-            console.log('API Error (non-JSON):', textData.substring(0, 200));
-          }
-        } catch (parseError) {
-          console.log('Could not parse error response:', parseError);
-        }
-        
-        const apiError = new Error(errorMessage);
-        (apiError as any).status = response.status;
-        (apiError as any).url = url;
-        
-        // Enhanced error logging
-        console.error(`API request failed: ${endpoint}`, {
-          url,
-          error: errorMessage,
-          status: response.status,
-          statusText: response.statusText,
-        });
-        
-        throw apiError;
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+        const error = new Error(errorMessage);
+        (error as any).status = response.status;
+        (error as any).url = url;
+        (error as any).response = errorData;
+        throw error;
       }
 
-      const contentType = response.headers.get('content-type');
-      if (contentType && contentType.includes('application/json')) {
-        return await response.json();
-      } else {
-        return await response.text() as unknown as T;
-      }
+      const data = await response.json();
+      return data;
     } catch (error) {
-      console.error('API Request Error:', {
-        url,
-        error: error instanceof Error ? error.message : error
-      });
+      console.error('API Request failed:', error);
       throw error;
     }
   }
@@ -273,7 +313,10 @@ class ApiClient {
   }
 
   async syncUsers() {
-    return this.request('/auth/sync-users', { method: 'POST' });
+    return this.request<void>('/auth/sync-users', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
   }
 
   // Dashboard
@@ -286,18 +329,17 @@ class ApiClient {
   }
 
   async getRecentActivity(limit?: number) {
-    const params = limit ? `?limit=${limit}` : '';
-    return this.request<RecentActivity>(`/admin/dashboard/activity${params}`);
+    return this.request<RecentActivity>(`/admin/dashboard/activity${limit ? `?limit=${limit}` : ''}`);
   }
 
-  // Profiles (Admin)
+  // Profiles
   async getProfiles(params: PaginationParams = {}) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) searchParams.append(key, String(value));
+      if (value !== undefined) searchParams.append(key, value.toString());
     });
     
-    return this.request<PaginatedResponse<Profile>>(`/profiles?${searchParams}`);
+    return this.request<PaginatedResponse<Profile>>(`/profiles?${searchParams.toString()}`);
   }
 
   async getProfileById(id: string) {
@@ -316,17 +358,17 @@ class ApiClient {
   }
 
   async getUserStats(id: string) {
-    return this.request(`/profiles/${id}/stats`);
+    return this.request<any>(`/profiles/${id}/stats`);
   }
 
-  // Articles (Admin)
+  // Articles
   async getArticles(params: ArticleQueryParams = {}) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) searchParams.append(key, String(value));
+      if (value !== undefined) searchParams.append(key, value.toString());
     });
     
-    return this.request<PaginatedResponse<Article>>(`/admin/articles?${searchParams}`);
+    return this.request<PaginatedResponse<Article>>(`/admin/articles?${searchParams.toString()}`);
   }
 
   async getArticle(id: string) {
@@ -334,34 +376,16 @@ class ApiClient {
   }
 
   async createArticle(data: Partial<Article> | FormData) {
-    // Handle FormData for multipart/form-data requests (with file uploads)
-    if (data instanceof FormData) {
-      return this.request<Article>('/admin/articles', {
-        method: 'POST',
-        body: data,
-      });
-    }
-    
-    // Handle regular JSON requests (backward compatibility)
     return this.request<Article>('/admin/articles', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
     });
   }
 
   async updateArticle(id: string, data: Partial<Article> | FormData) {
-    // Handle FormData for multipart/form-data requests (with file uploads)
-    if (data instanceof FormData) {
-      return this.request<Article>(`/admin/articles/${id}`, {
-        method: 'PATCH',
-        body: data,
-      });
-    }
-    
-    // Handle regular JSON requests (backward compatibility)
     return this.request<Article>(`/admin/articles/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
     });
   }
 
@@ -369,18 +393,14 @@ class ApiClient {
     return this.request(`/admin/articles/${id}`, { method: 'DELETE' });
   }
 
-  // Scans (Admin)
+  // Scans
   async getScans(params: PaginationParams & { include?: string[] } = {}) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
-      if (key === 'include' && Array.isArray(value)) {
-        value.forEach(relation => searchParams.append('include', relation));
-      } else if (value !== undefined) {
-        searchParams.append(key, String(value));
-      }
+      if (value !== undefined) searchParams.append(key, value.toString());
     });
     
-    return this.request<PaginatedResponse<Scan>>(`/admin/scans?${searchParams}`);
+    return this.request<PaginatedResponse<Scan>>(`/scans?${searchParams.toString()}`);
   }
 
   async getScan(id: string) {
@@ -398,14 +418,14 @@ class ApiClient {
     return this.request(`/scans/${id}`, { method: 'DELETE' });
   }
 
-  // Objects (Admin)
-  async getObjects(params: PaginationParams & { scanId?: string; category?: string } = {}) {
+  // Objects
+  async getObjects(params: PaginationParams & { scanId?: string; category?: string; isValidated?: boolean } = {}) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) searchParams.append(key, String(value));
+      if (value !== undefined) searchParams.append(key, value.toString());
     });
     
-    return this.request<PaginatedResponse<DetectedObject>>(`/admin/objects?${searchParams}`);
+    return this.request<PaginatedResponse<DetectedObject>>(`/objects?${searchParams.toString()}`);
   }
 
   async getObject(id: string) {
@@ -445,14 +465,18 @@ class ApiClient {
     });
   }
 
-  // Retraining Data (Admin)
+  async deleteObject(id: string) {
+    return this.request(`/admin/objects/${id}`, { method: 'DELETE' });
+  }
+
+  // Retraining
   async getRetrainingData(params: PaginationParams = {}) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) searchParams.append(key, String(value));
+      if (value !== undefined) searchParams.append(key, value.toString());
     });
     
-    return this.request<RetrainingData[]>(`/retraining?${searchParams}`);
+    return this.request<RetrainingData[]>(`/retraining?${searchParams.toString()}`);
   }
 
   async createRetrainingData(data: Partial<RetrainingData>) {
@@ -471,140 +495,55 @@ class ApiClient {
     const formData = new FormData();
     formData.append('file', file);
     if (path) formData.append('path', path);
-
-    return this.request<{ url: string }>('/upload', {
+    
+    return this.request<{ url: string }>('/upload/file', {
       method: 'POST',
       body: formData,
     });
   }
 
-  // Article Image Upload (with dedicated endpoint and comprehensive fallbacks)
   async uploadArticleImage(file: File) {
-    try {
-      // Log the upload attempt
-      console.log('Attempting article image upload:', {
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type
-      });
-
-      // First try the new dedicated article image endpoint
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const result = await this.request<{ url: string }>('/upload/article-image', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      console.log('Dedicated article image upload successful:', result);
-      return result;
-    } catch (dedicatedError: any) {
-      console.error('Dedicated article endpoint failed:', {
-        error: dedicatedError?.message,
-        status: dedicatedError?.status,
-        response: dedicatedError?.response
-      });
-      
-      // Fallback 1: Try the general upload endpoint
-      try {
-        console.log('Trying general upload endpoint...');
-        
-        const fallbackFormData = new FormData();
-        fallbackFormData.append('file', file);
-        fallbackFormData.append('path', 'articles');
-
-        const result = await this.request<{ url: string }>('/upload', {
-          method: 'POST',
-          body: fallbackFormData,
-        });
-        
-        console.log('General upload successful:', result);
-        return result;
-      } catch (generalError: any) {
-        console.error('General upload also failed:', generalError);
-        
-        // Fallback 2: Use the scans endpoint directly (since it works)
-        try {
-          console.log('Trying scans endpoint as final fallback...');
-          
-          const scansFormData = new FormData();
-          scansFormData.append('file', file);
-          scansFormData.append('original_filename', `article-${Date.now()}-${file.name}`);
-          
-          // Use the scans endpoint that we know works
-          const token = this.token;
-          const scansResponse = await fetch(`${this.baseURL}/scans`, {
-            method: 'POST',
-            headers: {
-              'Authorization': token ? `Bearer ${token}` : '',
-            },
-            body: scansFormData,
-          });
-
-          if (!scansResponse.ok) {
-            const errorText = await scansResponse.text();
-            throw new Error(`HTTP ${scansResponse.status}: ${errorText}`);
-          }
-
-          const scansResult = await scansResponse.json();
-          console.log('Scans endpoint fallback successful:', scansResult);
-          
-          // Extract the image URL from the scan result
-          if (scansResult.image_url) {
-            // Delete the scan record since we only wanted the uploaded image
-            try {
-              await fetch(`${this.baseURL}/scans/${scansResult.id}`, {
-                method: 'DELETE',
-                headers: {
-                  'Authorization': token ? `Bearer ${token}` : '',
-                },
-              });
-              console.log('Cleaned up temporary scan record');
-            } catch (cleanupError) {
-              console.warn('Failed to clean up temporary scan record:', cleanupError);
-            }
-            
-            return { url: scansResult.image_url };
-          } else {
-            throw new Error('No image URL returned from scans endpoint');
-          }
-        } catch (scansError: any) {
-          console.error('Scans endpoint fallback also failed:', scansError);
-          
-          // If all approaches fail, throw a comprehensive error
-          throw new Error(`Image upload failed on all attempts: 1) Dedicated endpoint: ${dedicatedError?.message || 'Unknown error'} 2) General upload: ${generalError?.message || 'Unknown error'} 3) Scans fallback: ${scansError?.message || 'Unknown scans error'}`);
-        }
-      }
-    }
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'article');
+    
+    return this.request<{ url: string }>('/upload/article-image', {
+      method: 'POST',
+      body: formData,
+    });
   }
 
-  // Retraining/Dataset methods
+  // Dataset Management
   async getDatasets() {
-    return this.request<any[]>('/retraining/datasets');
+    return this.request<Dataset[]>('/retraining/datasets');
   }
 
-  async createDataset(data: { name: string; description?: string }) {
-    return this.request<any>('/retraining/datasets', {
+  async createDataset(data: { name: string; description?: string; configuration?: Record<string, any> }) {
+    return this.request<Dataset>('/retraining/datasets', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
   async getDataset(id: string) {
-    return this.request<any>(`/retraining/datasets/${id}`);
+    return this.request<Dataset>(`/retraining/datasets/${id}`);
   }
 
-  async updateDataset(id: string, data: any) {
-    return this.request<any>(`/retraining/datasets/${id}`, {
+  async updateDataset(id: string, data: Partial<Dataset>) {
+    return this.request<Dataset>(`/retraining/datasets/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
 
   async deleteDataset(id: string) {
-    return this.request<any>(`/retraining/datasets/${id}`, {
-      method: 'DELETE',
+    return this.request(`/retraining/datasets/${id}`, { method: 'DELETE' });
+  }
+
+  async addImagesToDataset(datasetId: string, objectIds: string[]) {
+    return this.request<any>(`/retraining/datasets/${datasetId}/images`, {
+      method: 'POST',
+      body: JSON.stringify({ objectIds }),
     });
   }
 
@@ -614,37 +553,72 @@ class ApiClient {
     });
   }
 
-  async getAnnotationTasks(datasetId: string) {
-    return this.request<any[]>(`/retraining/datasets/${datasetId}/tasks`);
+  async completeTraining(datasetId: string, metrics: {
+    final_map?: number;
+    precision?: number;
+    recall?: number;
+    epochs_completed?: number;
+    best_weights_path?: string;
+  }) {
+    return this.request<any>(`/retraining/datasets/${datasetId}/complete`, {
+      method: 'POST',
+      body: JSON.stringify(metrics),
+    });
   }
 
-  async updateAnnotationTask(taskId: string, data: any) {
-    return this.request<any>(`/retraining/tasks/${taskId}`, {
+  async failTraining(datasetId: string, error: string) {
+    return this.request<any>(`/retraining/datasets/${datasetId}/fail`, {
+      method: 'POST',
+      body: JSON.stringify({ error }),
+    });
+  }
+
+  // Annotation Tasks
+  async getAnnotationTasks(datasetId: string) {
+    return this.request<AnnotationTask[]>(`/retraining/datasets/${datasetId}/tasks`);
+  }
+
+  async getAnnotationTask(taskId: string) {
+    return this.request<AnnotationTask>(`/retraining/tasks/${taskId}`);
+  }
+
+  async updateAnnotationTask(taskId: string, data: {
+    annotations?: Array<{
+      category: string;
+      bbox: { x: number; y: number; width: number; height: number };
+      confidence?: number;
+      is_ai_generated: boolean;
+      verified: boolean;
+    }>;
+    status?: AnnotationStatus;
+    notes?: string;
+  }) {
+    return this.request<AnnotationTask>(`/retraining/tasks/${taskId}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
   }
 
   async assignAnnotationTask(taskId: string) {
-    return this.request<any>(`/retraining/tasks/${taskId}/assign`, {
+    return this.request<AnnotationTask>(`/retraining/tasks/${taskId}/assign`, {
       method: 'POST',
     });
   }
 
-  async addImagesToDataset(datasetId: string, objectIds: string[]) {
-    console.log('API Client - addImagesToDataset called with:', {
-      datasetId,
-      objectIds,
-      objectCount: objectIds?.length
+  // Export functionality
+  async exportDatasetForTraining(datasetId: string): Promise<Blob> {
+    const response = await fetch(`${this.baseURL}/retraining/datasets/${datasetId}/export`, {
+      method: 'GET',
+      headers: {
+        ...(this.token && { Authorization: `Bearer ${this.token}` }),
+      },
     });
-    
-    const payload = { objectIds };
-    console.log('API Client - Request payload:', payload);
-    
-    return this.request<any>(`/retraining/datasets/${datasetId}/images`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+
+    if (!response.ok) {
+      throw new Error(`Export failed: ${response.statusText}`);
+    }
+
+    return response.blob();
   }
 
   // Helper to generate proxied image URLs to avoid CORS issues
@@ -661,9 +635,8 @@ class ApiClient {
     return originalUrl;
   }
 
+  // Export YOLO dataset
   async exportYoloDataset(objectIds: string[]): Promise<Blob> {
-    console.log('API Client - exportYoloDataset called with:', { objectIds, count: objectIds.length });
-    
     const response = await fetch(`${this.baseURL}/retraining/export-yolo`, {
       method: 'POST',
       headers: {
@@ -677,7 +650,7 @@ class ApiClient {
       throw new Error(`Export failed: ${response.statusText}`);
     }
 
-    return await response.blob();
+    return response.blob();
   }
 }
 

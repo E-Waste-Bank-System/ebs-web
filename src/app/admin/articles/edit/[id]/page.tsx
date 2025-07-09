@@ -136,6 +136,8 @@ export default function EditArticlePage() {
           }
         }
         
+        console.log('Image file present:', !!imageFile);
+        
         await updateArticleMutation.mutateAsync({
           id,
           data: formData
@@ -171,8 +173,11 @@ export default function EditArticlePage() {
           status: (error as any).status,
           url: (error as any).url,
           response: (error as any).response,
+          stack: (error as any).stack,
         });
       }
+      // Show user-friendly error message
+      alert(`Failed to update article: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
     }
   };
 
@@ -339,6 +344,11 @@ export default function EditArticlePage() {
                                     onChange={(e) => e.target.files && handleImageSelect(e.target.files[0])}
                                     className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#69C0DC]/10 file:text-[#69C0DC] hover:file:bg-[#69C0DC]/20 border-gray-200"
                                 />
+                                {imageFile && (
+                                    <p className="text-xs text-green-600 font-medium">
+                                        ✓ New image selected: {imageFile.name}
+                                    </p>
+                                )}
                             </div>
                         </div>
                         <div className="space-y-3">

@@ -78,6 +78,25 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import React from 'react';
+import { ScanCard } from '@/components/admin/ScanCard';
+
+// Helper to format numbers compactly (e.g., 1.5K, 2.3M)
+function formatCompactNumber(value: number): string {
+  return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
+
+// Helper to format value for stat cards (number or currency)
+function formatStatValue(value: string | number): string {
+  if (typeof value === 'number') {
+    return formatCompactNumber(value);
+  } else if (typeof value === 'string' && value.startsWith('Rp')) {
+    const num = parseInt(value.replace(/[^\d]/g, ''));
+    if (!isNaN(num) && num >= 1000) {
+      return `Rp ${formatCompactNumber(num)}`;
+    }
+  }
+  return value as string;
+}
 
 // Component for individual stat cards
 function ModernStatCard({ 
@@ -120,7 +139,7 @@ function ModernStatCard({
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatStatValue(value)}</p>
             <p className="text-xs text-gray-500 dark:text-gray-500">{subtitle}</p>
           </div>
           <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
@@ -614,10 +633,6 @@ export default function EWastePage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Button variant="outline" className="rounded-xl">
-            <Download className="h-4 w-4 mr-2" />
-            Export Data
-          </Button>
         </div>
       </div>
 
@@ -660,34 +675,14 @@ export default function EWastePage() {
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-          <TabsList className="grid w-full sm:w-auto grid-cols-3 rounded-xl">
-            <TabsTrigger value="scans" className="rounded-lg">Scans</TabsTrigger>
-            <TabsTrigger value="categories" className="rounded-lg">Categories</TabsTrigger>
-            <TabsTrigger value="analytics" className="rounded-lg">Analytics</TabsTrigger>
+          <TabsList className="grid grid-cols-3 w-full rounded-xl">
+            <TabsTrigger value="scans" className="flex-1 rounded-lg">Scans</TabsTrigger>
+            <TabsTrigger value="categories" className="flex-1 rounded-lg">Categories</TabsTrigger>
+            <TabsTrigger value="analytics" className="flex-1 rounded-lg">Analytics</TabsTrigger>
           </TabsList>
 
           {/* Filters */}
           <div className="flex items-center space-x-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search scans..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-64 rounded-xl"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={(value: 'completed' | 'processing' | 'failed' | 'all') => setStatusFilter(value)}>
-              <SelectTrigger className="w-40 rounded-xl">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="processing">Processing</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
@@ -716,103 +711,13 @@ export default function EWastePage() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredScans.map((scan) => (
-                <Card key={scan.id} className="border-0 shadow-sm hover:shadow-lg transition-all duration-300 group">
-                  <CardContent className="p-6">
-                    <div className="space-y-4">
-                      {/* Header */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={scan.user?.avatar_url} />
-                            <AvatarFallback className="bg-gradient-to-br from-[#69C0DC] to-[#5BA8C4] text-white">
-                              {scan.user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium text-gray-900">{scan.user?.full_name || 'Unknown User'}</p>
-                            <p className="text-sm text-gray-500">{format(new Date(scan.created_at), 'MMM d, yyyy')}</p>
-                          </div>
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="rounded-lg">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent className="rounded-xl">
-                            <DropdownMenuItem onClick={() => router.push(`/admin/e-waste/${scan.id}`)}>
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.open(scan.image_url, '_blank')}>
-                              Download Image
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                              onClick={() => confirmDeleteScan(scan.id)}
-                            >
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-
-                      {/* Scan Image */}
-                      <div className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden">
-                        {scan.image_url ? (
-                          <img 
-                            src={scan.image_url} 
-                            alt="Scan"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <ImageIcon className="h-12 w-12 text-gray-400" />
-                          </div>
-                        )}
-                        <div className="absolute top-3 right-3">
-                          <Badge className={`${getStatusColor(scan.status)} border`}>
-                            <div className="flex items-center space-x-1">
-                              {getStatusIcon(scan.status)}
-                              <span className="capitalize">{scan.status}</span>
-                            </div>
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* Scan Details */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Items Detected</span>
-                          <span className="font-semibold text-gray-900">{scan.objects_count || 0}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">Estimated Value</span>
-                          <span className="font-semibold text-[#69C0DC]">
-                            {formatRupiah(Number(scan.total_estimated_value) || 0)}
-                          </span>
-                        </div>
-                        {scan.original_filename && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-600">Filename</span>
-                            <span className="text-sm text-gray-900 truncate max-w-32">{scan.original_filename}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex space-x-2 pt-2">
-                        <Button 
-                          size="sm" 
-                          className="flex-1 bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-lg"
-                          onClick={() => router.push(`/admin/e-waste/${scan.id}`)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <ScanCard
+                  key={scan.id}
+                  scan={scan}
+                  onViewDetails={(id) => router.push(`/admin/e-waste/${id}`)}
+                  onDownloadImage={(url) => window.open(url, '_blank')}
+                  onDelete={confirmDeleteScan}
+                />
               ))}
             </div>
           )}
@@ -923,8 +828,8 @@ export default function EWastePage() {
                           </div>
                           <div className="flex-1">
                             <h3 className="font-semibold text-gray-900 dark:text-white">{category.name}</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{category.count} items</p>
-                            <p className="text-sm font-medium text-[#69C0DC]">{formatRupiah(category.value)}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{formatStatValue(category.count)} items</p>
+                            <p className="text-sm font-medium text-[#69C0DC]">{formatStatValue(formatRupiah(category.value))}</p>
                           </div>
                         </div>
                       </div>
@@ -996,7 +901,7 @@ export default function EWastePage() {
                               style={{ width: `${percentage}%` }}
                             />
                           </div>
-                          <span className="text-sm font-medium text-gray-900 w-16 text-right">{formatRupiah(category.value)}</span>
+                          <span className="text-sm font-medium text-gray-900 w-16 text-right">{formatStatValue(formatRupiah(category.value))}</span>
                         </div>
                       </div>
                     );
