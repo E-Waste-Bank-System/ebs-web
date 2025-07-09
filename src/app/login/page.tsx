@@ -63,53 +63,53 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Left Side - Welcome Section */}
-      <div className="flex-1 bg-gradient-to-br from-[#69C0DC] to-[#4AA8C2] flex flex-col justify-between p-8 m-2 rounded-xl text-white relative overflow-hidden">
+      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-[#69C0DC] to-[#4AA8C2] flex-col justify-between p-4 sm:p-6 lg:p-8 m-2 rounded-xl text-white relative overflow-hidden">
         {/* Logo */}
         <div className="flex items-center space-x-3 z-10">
           <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-            <Recycle className="h-8 w-8 text-white" />
+            <Recycle className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">E-Hub.</h1>
-            <p className="text-sm opacity-80">E-waste Bank System</p>
+            <h1 className="text-lg sm:text-xl font-bold">E-Hub.</h1>
+            <p className="text-xs sm:text-sm opacity-80">E-waste Bank System</p>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="space-y-6 z-10">
-          <div className="space-y-4">
-            <h2 className="text-4xl font-bold leading-tight">
+        <div className="space-y-4 sm:space-y-6 z-10">
+          <div className="space-y-3 sm:space-y-4">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
               Mulai Kelola <span className="italic">e-waste</span><br />
               dengan efisien.
             </h2>
-            <p className="text-lg opacity-90 max-w-md">
+            <p className="text-sm sm:text-base lg:text-lg opacity-90 max-w-md">
               Akses dashboard admin untuk memantau data pengguna dan mengoptimalkan pengelolaan sampah elektronik secara cerdas.
             </p>
           </div>
         </div>
 
-        {/* Decorative Elements */}
-        <div className="absolute bottom-0 left-0 w-32 h-32 opacity-20">
+        {/* Decorative Elements - Hidden on mobile for cleaner look */}
+        <div className="absolute bottom-0 left-0 w-32 h-32 opacity-20 hidden lg:block">
           <div className="w-full h-full bg-white/10 rounded-tr-3xl"></div>
         </div>
-        <div className="absolute bottom-8 left-8 w-16 h-16 opacity-30">
+        <div className="absolute bottom-8 left-8 w-16 h-16 opacity-30 hidden lg:block">
           <div className="w-4 h-4 bg-white rounded-full mb-2"></div>
           <div className="w-0 h-0 border-l-8 border-r-8 border-b-12 border-l-transparent border-r-transparent border-b-white"></div>
         </div>
-        <div className="absolute bottom-16 right-16 w-24 h-24 opacity-20">
+        <div className="absolute bottom-16 right-16 w-24 h-24 opacity-20 hidden lg:block">
           <div className="w-full h-full bg-white/10 transform rotate-45 rounded-lg"></div>
         </div>
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 bg-white flex items-center justify-center p-8">
-        <div className="w-full max-w-md space-y-8">
+      <div className="flex-1 bg-white flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div className="w-full max-w-md space-y-6 sm:space-y-8">
           {/* Welcome Text */}
           <div className="text-center space-y-2">
-            <h3 className="text-3xl font-bold text-gray-900">Selamat datang!</h3>
-            <p className="text-gray-600">Masuk untuk kelola e-waste dengan efisien!</p>
+            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">Selamat datang!</h3>
+            <p className="text-sm sm:text-base text-gray-600">Masuk untuk kelola e-waste dengan efisien!</p>
           </div>
 
           {/* Error Alert */}
@@ -121,8 +121,8 @@ export default function LoginPage() {
           )}
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <Input
                   id="email"
@@ -132,7 +132,7 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-[#69C0DC] focus:ring-[#69C0DC]"
+                  className="h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-[#69C0DC] focus:ring-[#69C0DC] text-base"
                 />
               </div>
               
@@ -145,14 +145,14 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isLoading}
-                  className="h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-[#69C0DC] focus:ring-[#69C0DC]"
+                  className="h-12 bg-gray-50 border-gray-200 rounded-xl focus:bg-white focus:border-[#69C0DC] focus:ring-[#69C0DC] text-base"
                 />
               </div>
             </div>
             
             <Button 
               type="submit" 
-              className="w-full h-12 bg-[#69C0DC] hover:bg-[#5BADD1] text-white rounded-xl font-medium text-lg"
+              className="w-full h-12 bg-[#69C0DC] hover:bg-[#5BADD1] text-white rounded-xl font-medium text-base sm:text-lg"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -165,8 +165,6 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
-
-          
         </div>
       </div>
     </div>

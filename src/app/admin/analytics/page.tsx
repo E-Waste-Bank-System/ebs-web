@@ -304,16 +304,16 @@ export default function AnalyticsPage() {
   const valueColors = ['#EC4899', '#8B5CF6', '#14B8A6', '#F472B6', '#6366F1'];
 
   return (
-    <div className="p-6 space-y-8 min-h-screen">
+    <div className="p-2 sm:p-6 space-y-6 sm:space-y-8 min-h-screen">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Analytics</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Comprehensive insights into your e-waste management system performance.</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Analytics</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm sm:text-base">Comprehensive insights into your e-waste management system performance.</p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-40 rounded-xl">
+            <SelectTrigger className="w-full sm:w-40 rounded-xl">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-xl">
@@ -323,11 +323,11 @@ export default function AnalyticsPage() {
               <SelectItem value="1y">Last Year</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="rounded-xl" onClick={handleRefresh}>
+          <Button variant="outline" className="rounded-xl w-full sm:w-auto" onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl shadow-lg" onClick={exportData}>
+          <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl shadow-lg w-full sm:w-auto" onClick={exportData}>
             <Download className="h-4 w-4 mr-2" />
             Export Data
           </Button>
@@ -335,7 +335,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <MetricCard
           title="Total Scans"
           value={dashboardStats?.total_scans || 0}
@@ -371,7 +371,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Main Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Monthly E-Waste Breakdown (Bar Chart) */}
         <ChartCard
           title="Monthly E-Waste Breakdown"

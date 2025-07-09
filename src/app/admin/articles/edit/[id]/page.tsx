@@ -228,28 +228,28 @@ export default function EditArticlePage() {
   }
 
   return (
-    <div className="p-6 sm:p-8 space-y-8 min-h-screen">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+    <div className="p-2 sm:p-6 sm:p-8 space-y-6 sm:space-y-8 min-h-screen">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
         <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" onClick={() => router.push('/admin/articles')} className="rounded-xl border-gray-200 hover:border-gray-300">
             <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="space-y-1">
-            <h1 className="text-3xl font-bold text-slate-800">Edit Article</h1>
-            <p className="text-slate-500 line-clamp-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Edit Article</h1>
+            <p className="text-slate-500 line-clamp-1 text-sm sm:text-base">
                 Editing: {article?.title}
             </p>
             </div>
         </div>
-        <div className="flex gap-3">
-            <Button type="button" variant="outline" onClick={() => router.push('/admin/articles')} className="rounded-xl border-gray-200">
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Button type="button" variant="outline" onClick={() => router.push('/admin/articles')} className="rounded-xl border-gray-200 w-full sm:w-auto">
                 Cancel
             </Button>
             <Button 
                 type="submit" 
                 form="article-form"
                 disabled={updateArticleMutation.isPending}
-                className="bg-[#69C0DC] hover:bg-[#5BA8C4] text-white rounded-xl shadow-lg"
+                className="bg-[#69C0DC] hover:bg-[#5BA8C4] text-white rounded-xl shadow-lg w-full sm:w-auto"
             >
                 {updateArticleMutation.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -261,17 +261,17 @@ export default function EditArticlePage() {
         </div>
       </div>
       
-      <form id="article-form" onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid lg:grid-cols-3 gap-8">
+      <form id="article-form" onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
             <div className="lg:col-span-2 space-y-6">
                 <Card className="bg-white rounded-xl border-0 shadow-sm">
-                    <CardHeader className="pb-6">
-                        <CardTitle className="flex items-center text-slate-800 text-xl">
+                    <CardHeader className="pb-4 sm:pb-6">
+                        <CardTitle className="flex items-center text-slate-800 text-lg sm:text-xl">
                             <FileText className="mr-3 h-5 w-5 text-[#69C0DC]" />
                             Article Content
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardContent className="space-y-4 sm:space-y-6">
                         <div className="space-y-2">
                             <Label htmlFor="title" className="text-sm font-medium text-slate-700">Title</Label>
                             <Input
@@ -367,8 +367,8 @@ export default function EditArticlePage() {
 
             <div className="lg:col-span-1 space-y-6">
                 <Card className="bg-white rounded-xl border-0 shadow-sm">
-                    <CardHeader className="pb-6">
-                        <CardTitle className="flex items-center text-slate-800 text-xl">
+                    <CardHeader className="pb-4 sm:pb-6">
+                        <CardTitle className="flex items-center text-slate-800 text-lg sm:text-xl">
                             <CheckCircle className="mr-3 h-5 w-5 text-[#69C0DC]" />
                             Publish Settings
                         </CardTitle>
@@ -406,8 +406,8 @@ export default function EditArticlePage() {
 
                 {/* Mobile Preview */}
                 <Card className="bg-white rounded-xl border-0 shadow-sm">
-                    <CardHeader className="pb-6">
-                        <CardTitle className="flex items-center text-slate-800 text-xl">
+                    <CardHeader className="pb-4 sm:pb-6">
+                        <CardTitle className="flex items-center text-slate-800 text-lg sm:text-xl">
                             <span className="mr-3 text-lg">📱</span>
                             Mobile Preview
                         </CardTitle>

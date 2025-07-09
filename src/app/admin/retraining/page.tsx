@@ -167,7 +167,7 @@ const ModelPerformanceMetrics = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           {/* Precision */}
           <div className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-2">
@@ -482,19 +482,19 @@ export default function RetrainingPage() {
   };
 
   return (
-    <div className="p-6 space-y-8 min-h-screen">
+    <div className="p-2 sm:p-6 space-y-6 sm:space-y-8 min-h-screen">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">AI Model Training</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Manage datasets, annotations, and model training for improved e-waste detection.</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">AI Model Training</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm sm:text-base">Manage datasets, annotations, and model training for improved e-waste detection.</p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
           <Button 
             variant="outline" 
             onClick={handleExport}
             disabled={selectedObjects.length === 0 || isExporting}
-            className="rounded-xl"
+            className="rounded-xl w-full sm:w-auto"
           >
             {isExporting ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -506,7 +506,7 @@ export default function RetrainingPage() {
           <Button 
             onClick={() => setIsCreateDatasetOpen(true)}
             disabled={selectedObjects.length === 0}
-            className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl"
+            className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl w-full sm:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
             Create Dataset
@@ -515,20 +515,22 @@ export default function RetrainingPage() {
       </div>
 
       {/* Performance Metrics Section */}
-      <ModelPerformanceMetrics />
+      <div className="mt-2">
+        <ModelPerformanceMetrics />
+      </div>
 
       {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-4 w-full rounded-xl">
-          <TabsTrigger value="datasets" className="flex-1 rounded-lg">Datasets</TabsTrigger>
-          <TabsTrigger value="objects" className="flex-1 rounded-lg">Objects</TabsTrigger>
-          <TabsTrigger value="annotation" className="flex-1 rounded-lg">Annotation</TabsTrigger>
-          <TabsTrigger value="training" className="flex-1 rounded-lg">Training</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+        <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full rounded-xl mb-2 gap-2">
+          <TabsTrigger value="datasets" className="flex-1 rounded-lg text-xs sm:text-base">Datasets</TabsTrigger>
+          <TabsTrigger value="objects" className="flex-1 rounded-lg text-xs sm:text-base">Objects</TabsTrigger>
+          <TabsTrigger value="annotation" className="flex-1 rounded-lg text-xs sm:text-base">Annotation</TabsTrigger>
+          <TabsTrigger value="training" className="flex-1 rounded-lg text-xs sm:text-base">Training</TabsTrigger>
         </TabsList>
 
         {/* Datasets Tab */}
-        <TabsContent value="datasets" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        <TabsContent value="datasets" className="space-y-4 sm:space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             {datasetsLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <Card key={i} className="border-0 shadow-sm">
@@ -669,7 +671,7 @@ export default function RetrainingPage() {
         </TabsContent>
 
         {/* Objects Tab */}
-        <TabsContent value="objects" className="space-y-6">
+        <TabsContent value="objects" className="space-y-4 sm:space-y-6">
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -783,7 +785,7 @@ export default function RetrainingPage() {
         </TabsContent>
 
         {/* Annotation Tab */}
-        <TabsContent value="annotation" className="space-y-6">
+        <TabsContent value="annotation" className="space-y-4 sm:space-y-6">
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center text-gray-900 dark:text-white">
@@ -1027,7 +1029,7 @@ export default function RetrainingPage() {
         </TabsContent>
 
         {/* Training Tab */}
-        <TabsContent value="training" className="space-y-6">
+        <TabsContent value="training" className="space-y-4 sm:space-y-6">
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center text-gray-900 dark:text-white">

@@ -123,14 +123,14 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
                     isActive
                       ? 'bg-gradient-to-r from-[#69C0DC] to-[#5BA8C4] text-white shadow-lg'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700',
-                    'group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200'
+                    'group flex items-center px-4 py-4 text-base font-medium rounded-xl transition-all duration-200' // Larger touch area
                   )}
                   onClick={() => setSidebarOpen(false)}
                 >
                   <item.icon
                     className={classNames(
                       isActive ? 'text-white' : 'text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-300',
-                      'mr-3 h-5 w-5'
+                      'mr-3 h-6 w-6' // Larger icon for touch
                     )}
                   />
                   {item.name}
@@ -216,19 +216,43 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
       <div className="lg:pl-72">
         {/* Top header */}
         <div className="sticky top-0 z-40 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 shadow-sm">
-          <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 flex-col sm:flex-row gap-2 sm:gap-0">
             {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="lg:hidden dark:text-gray-300 dark:hover:text-white"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-
-            {/* Search */}
-            <div className="flex-1 max-w-lg mx-4">
+            <div className="flex items-center w-full sm:w-auto justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="lg:hidden dark:text-gray-300 dark:hover:text-white"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              {/* User menu for mobile */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center space-x-2 px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 lg:hidden">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={profile?.avatar_url} />
+                      <AvatarFallback className="bg-[#69C0DC] text-white text-xs">
+                        {getAuthorInitials(profile?.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <ChevronDown className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 rounded-xl bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
+                  <DropdownMenuItem 
+                    className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="mr-2 h-4 w-4 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            {/* Search bar full width on mobile */}
+            <div className="flex-1 max-w-lg mx-0 sm:mx-4 w-full">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
                 <input
@@ -238,10 +262,8 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
                 />
               </div>
             </div>
-
-            {/* Right side */}
-            <div className="flex items-center space-x-4">
-              {/* Theme toggle */}
+            {/* Theme toggle and user menu hidden on mobile, shown on desktop */}
+            <div className="hidden sm:flex items-center space-x-4">
               <Button 
                 variant="ghost" 
                 size="sm" 
@@ -254,8 +276,6 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
                   <Moon className="h-5 w-5 text-gray-600 dark:text-gray-300" />
                 )}
               </Button>
-
-              {/* User menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center space-x-2 px-3 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -283,7 +303,7 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
         </div>
 
         {/* Page content */}
-        <main className="flex-1">
+        <main className="flex-1 px-2 sm:px-4 md:px-8 py-4 sm:py-8">
           {children}
         </main>
       </div>

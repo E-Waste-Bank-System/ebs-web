@@ -514,13 +514,13 @@ export default function ScanDetailsPage() {
 
   return (
     <div className="min-h-screen bg-white pb-12">
-      <div className="sticky top-0 z-30 bg-white border-b border-slate-100 flex items-center justify-between px-8 py-4 shadow-sm">
+      <div className="sticky top-0 z-30 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-8 py-4 shadow-sm">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => router.push('/admin/e-waste')} className="rounded-xl">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-3">
               Scan Details
               {getStatusBadge(scan.status)}
             </h1>
@@ -532,7 +532,7 @@ export default function ScanDetailsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8 px-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6 sm:mt-8 px-4 sm:px-8">
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 flex flex-col items-center">
           <Eye className="h-5 w-5 text-[#69C0DC] mb-1" />
           <div className="text-lg font-bold text-slate-800">{scan.status.charAt(0).toUpperCase() + scan.status.slice(1)}</div>
@@ -555,10 +555,10 @@ export default function ScanDetailsPage() {
         </div>
       </div>
 
-      <div className="mt-8 flex flex-col gap-8 px-8">
-        <div className="flex flex-col md:flex-row gap-6">
+      <div className="mt-6 sm:mt-8 flex flex-col gap-6 sm:gap-8 px-4 sm:px-8">
+        <div className="flex flex-col lg:flex-row gap-6">
           <div className="flex-1">
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col md:flex-row">
+            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col lg:flex-row">
               <div className="flex-1 flex items-center justify-center p-4">
                 <Image 
                   src={scan.image_url} 
@@ -568,7 +568,7 @@ export default function ScanDetailsPage() {
                   className="rounded-lg object-cover w-full max-w-[350px] aspect-video border border-slate-100 shadow-md"
                 />
               </div>
-              <div className="flex-1 border-t md:border-t-0 md:border-l border-slate-100 p-4 flex flex-col justify-center gap-3">
+              <div className="flex-1 border-t lg:border-t-0 lg:border-l border-slate-100 p-4 flex flex-col justify-center gap-3">
                 <div className="flex items-center gap-2 text-slate-500 text-sm font-semibold mb-2"><FileText className="h-4 w-4" />Scan Information</div>
                 <div className="flex items-center gap-2"><span className="text-slate-400"><FileText className="h-4 w-4" /></span> <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded">#{scan.id}</span></div>
                 <div className="flex items-center gap-2"><User className="h-4 w-4 text-slate-400" /> <span className="font-medium text-slate-800">{scan.user?.full_name || 'Anonymous'}</span></div>
@@ -581,7 +581,7 @@ export default function ScanDetailsPage() {
         <div className="flex-1 space-y-6">
           <Card className="bg-white rounded-xl border border-slate-200 shadow-sm">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <CardTitle className="flex items-center text-slate-800">
                     <Cpu className="mr-2 h-5 w-5 text-[#69C0DC]" />
@@ -603,7 +603,7 @@ export default function ScanDetailsPage() {
                   <ObjectDetailCard key={obj.id} object={obj} onUpdate={refetch}/>
                 ))
               ) : (
-                <div className="text-center py-12">
+                <div className="text-center py-8 sm:py-12">
                   <div className="mx-auto w-fit p-3 bg-gray-100 rounded-full mb-4">
                     <Cpu className="h-8 w-8 text-gray-400" />
                   </div>

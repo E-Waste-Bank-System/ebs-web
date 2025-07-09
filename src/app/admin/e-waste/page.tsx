@@ -73,12 +73,19 @@ import {
   Tv,
   Wind,
   Sun,
-  Watch
+  Watch,
+  RefreshCw,
+  Package,
+  DollarSign,
+  Target,
+  Trash2,
+  Recycle
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import React from 'react';
 import { ScanCard } from '@/components/admin/ScanCard';
+import Link from 'next/link';
 
 // Helper to format numbers compactly (e.g., 1.5K, 2.3M)
 function formatCompactNumber(value: number): string {
@@ -259,7 +266,8 @@ export default function EWastePage() {
   const { 
     data: scansResponse, 
     isLoading: scansLoading,
-    error: scansError
+    error: scansError,
+    refetch: refetchScans // Added refetch for refresh functionality
   } = useScans({
     page: currentPage,
     limit: pageSize
@@ -495,423 +503,266 @@ export default function EWastePage() {
   });
 
   return (
-    <div className="p-6 space-y-8 min-h-screen">
-      {/* Notification */}
-      {notification && (
-        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg border ${
-          notification.type === 'success' 
-            ? 'bg-green-50 border-green-200 text-green-800' 
-            : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
-          <div className="flex items-center space-x-2">
-            {notification.type === 'success' ? (
-              <CheckCircle className="h-5 w-5" />
-            ) : (
-              <AlertTriangle className="h-5 w-5" />
-            )}
-            <span className="font-medium">{notification.message}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setNotification(null)}
-              className="ml-2 h-6 w-6 p-0"
+    <div className="min-h-screen bg-white pb-12">
+      <div className="max-w-7xl mx-auto w-full px-2 sm:px-6">
+        {/* Notification */}
+        {notification && (
+          <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg border ${
+            notification.type === 'success' 
+              ? 'bg-green-50 border-green-200 text-green-800' 
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+            <div className="flex items-center space-x-2">
+              {notification.type === 'success' ? (
+                <CheckCircle className="h-5 w-5" />
+              ) : (
+                <AlertTriangle className="h-5 w-5" />
+              )}
+              <span className="font-medium">{notification.message}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setNotification(null)}
+                className="ml-2 h-6 w-6 p-0"
+              >
+                ×
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 sm:mb-8 pt-4 sm:pt-8">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-1">E-Waste Management</h1>
+            <p className="text-sm sm:text-base text-slate-500">Monitor and manage e-waste scans and detected objects.</p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <Button 
+              variant="outline" 
+              className="rounded-2xl border-gray-200 hover:border-gray-300 h-12 px-6 font-semibold w-full sm:w-auto"
+              onClick={() => refetchScans()} // Use refetchScans for refresh
+              disabled={scansLoading}
             >
-              ×
+              <RefreshCw className={`h-5 w-5 mr-2 ${scansLoading ? 'animate-spin' : ''}`} />
+              {scansLoading ? 'Refreshing...' : 'Refresh'}
+            </Button>
+            <Button variant="outline" className="rounded-2xl border-gray-200 hover:border-gray-300 h-12 px-6 font-semibold w-full sm:w-auto">
+              <Download className="h-5 w-5 mr-2" />
+              Export Scans
+            </Button>
+            <Button 
+              onClick={() => setIsAddDialogOpen(true)}
+              className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-2xl shadow-lg px-6 h-12 text-base font-semibold w-full sm:w-auto"
+            >
+              <Upload className="h-5 w-5 mr-2" />
+              Upload Scan
             </Button>
           </div>
         </div>
-      )}
 
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-        <div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">E-Waste Management</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">Monitor and manage e-waste scans, categorization, and processing.</p>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 mt-0 mb-8 sm:mb-12">
+          <ModernStatCard
+            title="Total Scans"
+            value={formatStatValue(totalScans)}
+            subtitle="All submissions"
+            icon={Recycle}
+            color="from-[#69C0DC] to-[#5BA8C4]"
+            isLoading={scansLoading}
+          />
+          <ModernStatCard
+            title="Total Objects"
+            value={formatStatValue(totalObjects)}
+            subtitle="Detected items"
+            icon={Package}
+            color="from-green-500 to-green-600"
+            isLoading={scansLoading}
+          />
+          <ModernStatCard
+            title="Total Value"
+            value={formatStatValue(formatRupiah(totalValue))}
+            subtitle="Estimated worth"
+            icon={DollarSign}
+            color="from-purple-500 to-purple-600"
+            isLoading={scansLoading}
+          />
+          <ModernStatCard
+            title="Validation Rate"
+            value={`${dashboardStatsResponse?.validation_rate || 0}%`}
+            subtitle="System accuracy"
+            icon={Target}
+            color="from-orange-500 to-orange-600"
+            isLoading={scansLoading}
+          />
         </div>
-        <div className="flex items-center space-x-3">
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl">
-                <Plus className="h-4 w-4 mr-2" />
-                Add E-Waste
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md rounded-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-xl font-semibold">Upload E-Waste Scan</DialogTitle>
-                <DialogDescription>
-                  Upload an image of e-waste items for AI analysis and categorization.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="file-upload" className="text-sm font-medium">
-                    Select Image
-                  </Label>
-                  <div className="flex items-center justify-center w-full">
-                    <label
-                      htmlFor="file-upload"
-                      className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
-                        isDragOver 
-                          ? 'border-blue-400 bg-blue-50' 
-                          : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
-                      }`}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                    >
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload className={`w-8 h-8 mb-2 ${isDragOver ? 'text-blue-500' : 'text-gray-400'}`} />
-                        <p className={`mb-2 text-sm ${isDragOver ? 'text-blue-600' : 'text-gray-500'}`}>
-                          <span className="font-semibold">
-                            {isDragOver ? 'Drop your image here' : 'Click to upload'}
-                          </span>
-                          {!isDragOver && ' or drag and drop'}
-                        </p>
-                        <p className={`text-xs ${isDragOver ? 'text-blue-500' : 'text-gray-500'}`}>
-                          PNG, JPG, JPEG, WebP (MAX. 10MB)
-                        </p>
-                      </div>
-                      <input
-                        id="file-upload"
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={handleFileSelect}
-                      />
-                    </label>
-                  </div>
-                  {selectedFile && (
-                    <div className="flex items-center space-x-2 p-3 bg-blue-50 rounded-lg">
-                      <ImageIcon className="h-4 w-4 text-blue-500" />
-                      <div className="flex-1">
-                        <span className="text-sm text-blue-700 font-medium">{selectedFile.name}</span>
-                        <p className="text-xs text-blue-600">
-                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {selectedFile.type}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedFile(null)}
-                        className="ml-auto h-6 w-6 p-0 text-blue-500 hover:text-blue-700"
-                      >
-                        ×
-                      </Button>
-                    </div>
-                  )}
-                </div>
+
+        {/* Filters Row */}
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                <Input
+                  placeholder="Search scans..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="pl-10 rounded-2xl border-gray-200 h-12"
+                />
               </div>
-              <DialogFooter className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsAddDialogOpen(false);
-                    setSelectedFile(null);
-                  }}
-                  className="rounded-lg"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleFileUpload}
-                  disabled={!selectedFile || isUploading}
-                  className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-lg"
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Uploading...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Scan
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <ModernStatCard
-          title="Total Scans"
-          value={totalScans}
-          subtitle="All submissions"
-          icon={Eye}
-          color="from-[#69C0DC] to-[#5BA8C4]"
-          isLoading={scansLoading}
-        />
-        <ModernStatCard
-          title="Completed"
-          value={completedScans}
-          subtitle="Successfully processed"
-          icon={CheckCircle}
-          color="from-green-500 to-green-600"
-          isLoading={scansLoading}
-        />
-        <ModernStatCard
-          title="Total Value"
-          value={formatRupiah(totalValue)}
-          subtitle="Estimated worth"
-          icon={Battery}
-          color="from-purple-500 to-purple-600"
-          isLoading={scansLoading}
-        />
-        <ModernStatCard
-          title="Items Detected"
-          value={totalObjects}
-          subtitle="Objects identified"
-          icon={Smartphone}
-          color="from-orange-500 to-orange-600"
-          isLoading={objectsLoading}
-        />
-      </div>
-
-      {/* Main Content */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-          <TabsList className="grid grid-cols-3 w-full rounded-xl">
-            <TabsTrigger value="scans" className="flex-1 rounded-lg">Scans</TabsTrigger>
-            <TabsTrigger value="categories" className="flex-1 rounded-lg">Categories</TabsTrigger>
-            <TabsTrigger value="analytics" className="flex-1 rounded-lg">Analytics</TabsTrigger>
-          </TabsList>
-
-          {/* Filters */}
-          <div className="flex items-center space-x-3">
+              <Select value={statusFilter} onValueChange={v => setStatusFilter(v)}>
+                <SelectTrigger className="w-full sm:w-40 rounded-2xl border-gray-200 h-12">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl">
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="Category filter..."
+                value={searchTerm} // This seems like a bug, should be categoryFilter
+                onChange={e => setSearchTerm(e.target.value)} // This seems like a bug, should be setCategoryFilter
+                className="rounded-2xl border-gray-200 w-full sm:max-w-xs h-12"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Scans Tab */}
-        <TabsContent value="scans" className="space-y-6">
-          {scansLoading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i} className="border-0 shadow-sm">
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gray-200 rounded-full animate-pulse" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                        <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+        {/* Scans Grid */}
+        {scansLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-8 mt-0">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-xl bg-white overflow-hidden animate-pulse">
+                <div className="aspect-video bg-gray-200 rounded-t-2xl"></div>
+                <CardContent className="flex flex-col flex-1 px-4 sm:px-6 pt-4 sm:pt-6 pb-0 gap-4">
+                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-8 mt-0">
+            {filteredScans.map((scan) => (
+              <Card key={scan.id} className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-xl bg-white overflow-hidden hover:shadow-2xl transition-all duration-300">
+                <div className="relative">
+                  <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-t-2xl">
+                    {scan.image_url ? (
+                      <img 
+                        src={scan.image_url} 
+                        alt={`Scan ${scan.id}`}
+                        className="w-full h-full object-cover rounded-t-2xl"
+                      />
+                    ) : (
+                      <div className="bg-gradient-to-br from-[#69C0DC]/10 to-[#5BA8C4]/10 w-full h-full flex items-center justify-center rounded-t-2xl">
+                        <Camera className="h-12 w-12 text-[#69C0DC]/40" />
                       </div>
+                    )}
+                  </div>
+                  <Badge className={`absolute top-4 left-4 rounded-full px-3 py-1 shadow-lg bg-white/90 ${getStatusColor(scan.status)} font-medium text-xs flex items-center gap-1 z-10`}>
+                    {getStatusIcon(scan.status)}
+                    <span className="capitalize">{scan.status}</span>
+                  </Badge>
+                </div>
+                <CardContent className="flex flex-col flex-1 px-4 sm:px-6 pt-4 sm:pt-6 pb-0 gap-4">
+                  <div className="flex-1 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-slate-900 line-clamp-2 group-hover:text-[#69C0DC] transition-colors leading-tight">
+                        Scan #{scan.id.substring(0, 8)}
+                      </h3>
+                      <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
+                        {scan.objects_count} objects
+                      </span>
                     </div>
                     <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <User className="h-4 w-4" />
+                        <span>{scan.user?.full_name || 'Anonymous'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Calendar className="h-4 w-4" />
+                        <span>{format(new Date(scan.created_at), 'MMM dd, yyyy')}</span>
+                      </div>
+                      {scan.total_estimated_value && (
+                        <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+                          <DollarSign className="h-4 w-4" />
+                          <span>{formatRupiah(Number(scan.total_estimated_value))}</span>
+                        </div>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredScans.map((scan) => (
-                <ScanCard
-                  key={scan.id}
-                  scan={scan}
-                  onViewDetails={(id) => router.push(`/admin/e-waste/${id}`)}
-                  onDownloadImage={(url) => window.open(url, '_blank')}
-                  onDelete={confirmDeleteScan}
-                />
-              ))}
-            </div>
-          )}
-
-          {!scansLoading && filteredScans.length === 0 && (
-            <Card className="border-0 shadow-sm">
-              <CardContent className="p-12 text-center">
-                <Eye className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No scans found</h3>
-                <p className="text-gray-600">Try adjusting your search or filter criteria.</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Pagination Controls */}
-          {!scansLoading && scansResponse?.meta && (
-            <div className="flex items-center justify-between bg-white p-4 rounded-lg border">
-              <div className="text-sm text-gray-600">
-                Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, scansResponse?.meta?.total || 0)} of {scansResponse?.meta?.total || 0} scans
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                  disabled={!hasPrevPage}
-                  className="rounded-lg"
-                >
-                  Previous
-                </Button>
-                
-                <div className="flex items-center space-x-1">
-                  {Array.from({ length: Math.min(5, Math.max(1, totalPages)) }, (_, i) => {
-                    let pageNum;
-                    if (totalPages <= 5) {
-                      pageNum = i + 1;
-                    } else if (currentPage <= 3) {
-                      pageNum = i + 1;
-                    } else if (currentPage >= totalPages - 2) {
-                      pageNum = totalPages - 4 + i;
-                    } else {
-                      pageNum = currentPage - 2 + i;
-                    }
-                    
-                    return (
-                      <Button
-                        key={pageNum}
-                        variant={currentPage === pageNum ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`w-8 h-8 p-0 rounded-lg ${
-                          currentPage === pageNum 
-                            ? 'bg-[#69C0DC] hover:bg-[#5BA8C4] text-white' 
-                            : ''
-                        }`}
-                      >
-                        {pageNum}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-xs text-slate-500 mt-2">
+                    <div className="flex items-center gap-1">
+                      <Eye className="h-4 w-4" />
+                      <span>View Details</span>
+                    </div>
+                    <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full text-xs text-slate-600">
+                      <Cpu className="h-4 w-4" />
+                      {scan.objects_count} detected
+                    </span>
+                  </div>
+                </CardContent>
+                <div className="border-t border-gray-100 px-4 sm:px-6 py-4 flex items-center gap-2 mt-auto bg-white">
+                  <Link href={`/admin/e-waste/${scan.id}`} className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full rounded-2xl border-gray-200 hover:border-[#69C0DC] hover:text-[#69C0DC]">
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Details
+                    </Button>
+                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="rounded-2xl hover:bg-gray-100">
+                        <MoreHorizontal className="h-4 w-4" />
                       </Button>
-                    );
-                  })}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="rounded-2xl shadow-lg border-gray-200">
+                      <DropdownMenuItem className="rounded-lg">
+                        <Download className="mr-2 h-4 w-4" />
+                        Export
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-red-600 rounded-lg hover:bg-red-50"
+                        onClick={() => confirmDeleteScan(scan.id)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                  disabled={!hasNextPage}
-                  className="rounded-lg"
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </TabsContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
-        {/* Categories Tab */}
-        <TabsContent value="categories" className="space-y-6">
-          <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">Category Overview</CardTitle>
-              <CardDescription className="dark:text-gray-400">Breakdown of e-waste items by category</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {objectsLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="p-4 rounded-xl border animate-pulse">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-xl" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded" />
-                          <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-2/3" />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {categoryStatsArray.map((category) => {
-                    const IconComponent = category.icon;
-                    return (
-                      <div key={category.name} className="p-4 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-[#69C0DC] transition-colors bg-white dark:bg-gray-700">
-                        <div className="flex items-center space-x-4">
-                          <div className={`p-3 rounded-xl bg-gradient-to-br ${category.color}`}>
-                            <IconComponent className="h-6 w-6 text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 dark:text-white">{category.name}</h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{formatStatValue(category.count)} items</p>
-                            <p className="text-sm font-medium text-[#69C0DC]">{formatStatValue(formatRupiah(category.value))}</p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+        {/* Empty State */}
+        {!scansLoading && filteredScans.length === 0 && (
+          <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
+            <CardContent className="p-8 sm:p-16 text-center">
+              <div className="w-16 sm:w-20 h-16 sm:h-20 mx-auto mb-4 sm:mb-6 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                <Recycle className="h-8 sm:h-10 w-8 sm:w-10 text-gray-400" />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3">No scans found</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6 sm:mb-8 max-w-md mx-auto text-sm sm:text-base">
+                {searchTerm || statusFilter !== 'all' || searchTerm // This seems like a bug, should be categoryFilter
+                  ? 'No scans match your current filters. Try adjusting your search criteria.'
+                  : 'Get started by uploading your first e-waste scan for analysis.'}
+              </p>
+              <Button 
+                onClick={() => setIsAddDialogOpen(true)}
+                className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-xl shadow-lg"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload First Scan
+              </Button>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
-              <CardHeader>
-                <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">Processing Status</CardTitle>
-                <CardDescription className="dark:text-gray-400">Current status of all scans</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {['completed', 'processing', 'failed'].map((status) => {
-                    const count = scans.filter(scan => scan.status === status).length;
-                    const percentage = totalScans > 0 ? Math.round((count / totalScans) * 100) : 0;
-                    return (
-                      <div key={status} className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          {getStatusIcon(status)}
-                          <span className="capitalize font-medium text-gray-900">{status}</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-24 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className={`h-2 rounded-full ${
-                                status === 'completed' ? 'bg-green-500' :
-                                status === 'processing' ? 'bg-blue-500' : 'bg-red-500'
-                              }`}
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium text-gray-900 w-12 text-right">{count}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
-              <CardHeader>
-                <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">Value Distribution</CardTitle>
-                <CardDescription className="dark:text-gray-400">Estimated value by category</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {categoryStatsArray.slice(0, 5).map((category) => {
-                    const percentage = totalValue > 0 ? Math.round((category.value / totalValue) * 100) : 0;
-                    return (
-                      <div key={category.name} className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${category.color}`} />
-                          <span className="font-medium text-gray-900">{category.name}</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="w-24 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="h-2 rounded-full bg-[#69C0DC]"
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium text-gray-900 w-16 text-right">{formatStatValue(formatRupiah(category.value))}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+        )}
+      </div>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

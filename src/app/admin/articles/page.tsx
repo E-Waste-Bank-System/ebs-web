@@ -226,34 +226,34 @@ export default function ArticlesPage() {
 
   return (
     <div className="min-h-screen bg-white pb-12">
-      <div className="max-w-7xl mx-auto w-full px-6">
+      <div className="max-w-7xl mx-auto w-full px-2 sm:px-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 pt-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 sm:mb-8 pt-4 sm:pt-8">
           {showRefreshMessage && (
             <div className="absolute top-4 right-4 bg-green-100 border border-green-200 text-green-800 px-4 py-2 rounded-lg shadow-lg z-50">
               Articles refreshed!
             </div>
           )}
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-1">Content Management</h1>
-            <p className="text-base text-slate-500">Create, manage, and publish articles about e-waste and sustainability.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-1">Content Management</h1>
+            <p className="text-sm sm:text-base text-slate-500">Create, manage, and publish articles about e-waste and sustainability.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <Button 
               variant="outline" 
-              className="rounded-2xl border-gray-200 hover:border-gray-300 h-12 px-6 font-semibold"
+              className="rounded-2xl border-gray-200 hover:border-gray-300 h-12 px-6 font-semibold w-full sm:w-auto"
               onClick={handleRefresh}
               disabled={isLoading}
             >
               <RefreshCw className={`h-5 w-5 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               {isLoading ? 'Refreshing...' : 'Refresh'}
             </Button>
-            <Button variant="outline" className="rounded-2xl border-gray-200 hover:border-gray-300 h-12 px-6 font-semibold">
+            <Button variant="outline" className="rounded-2xl border-gray-200 hover:border-gray-300 h-12 px-6 font-semibold w-full sm:w-auto">
               <Download className="h-5 w-5 mr-2" />
               Export Articles
             </Button>
             <Link href="/admin/articles/create">
-              <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-2xl shadow-lg px-6 h-12 text-base font-semibold">
+              <Button className="bg-[#69C0DC] hover:bg-[#5BA8C4] rounded-2xl shadow-lg px-6 h-12 text-base font-semibold w-full sm:w-auto">
                 <Plus className="h-5 w-5 mr-2" />
                 New Article
               </Button>
@@ -262,7 +262,7 @@ export default function ArticlesPage() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-0 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8 mt-0 mb-8 sm:mb-12">
           <StatCard
             title="Total Articles"
             value={totalArticles.toString()}
@@ -294,10 +294,10 @@ export default function ArticlesPage() {
         </div>
 
         {/* Filters Row */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center gap-3">
-            <div className="flex-1 flex items-center gap-3">
-              <div className="relative w-full max-w-xs">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="relative w-full sm:max-w-xs">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
                 <Input
                   placeholder="Search articles..."
@@ -307,7 +307,7 @@ export default function ArticlesPage() {
                 />
               </div>
               <Select value={statusFilter} onValueChange={v => setStatusFilter(v as any)}>
-                <SelectTrigger className="w-40 rounded-2xl border-gray-200 h-12">
+                <SelectTrigger className="w-full sm:w-40 rounded-2xl border-gray-200 h-12">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl">
@@ -321,7 +321,7 @@ export default function ArticlesPage() {
                 placeholder="Tag filter..."
                 value={tagFilter}
                 onChange={e => setTagFilter(e.target.value)}
-                className="rounded-2xl border-gray-200 max-w-xs h-12"
+                className="rounded-2xl border-gray-200 w-full sm:max-w-xs h-12"
               />
             </div>
           </div>
@@ -329,11 +329,11 @@ export default function ArticlesPage() {
 
         {/* Articles Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-8 mt-0">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-xl bg-white overflow-hidden animate-pulse">
                 <div className="aspect-video bg-gray-200 rounded-t-2xl"></div>
-                <CardContent className="flex flex-col flex-1 px-6 pt-6 pb-0 gap-4">
+                <CardContent className="flex flex-col flex-1 px-4 sm:px-6 pt-4 sm:pt-6 pb-0 gap-4">
                   <div className="h-6 bg-gray-200 rounded w-3/4"></div>
                   <div className="h-4 bg-gray-200 rounded w-full"></div>
                   <div className="h-4 bg-gray-200 rounded w-2/3"></div>
@@ -342,7 +342,7 @@ export default function ArticlesPage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 mt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-8 mt-0">
             {articles.map((article) => (
               <Card key={article.id} className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-xl bg-white overflow-hidden">
                 <div className="relative">
@@ -364,7 +364,7 @@ export default function ArticlesPage() {
                     <span className="capitalize">{article.status}</span>
                   </Badge>
                 </div>
-                <CardContent className="flex flex-col flex-1 px-6 pt-6 pb-0 gap-4">
+                <CardContent className="flex flex-col flex-1 px-4 sm:px-6 pt-4 sm:pt-6 pb-0 gap-4">
                   <div className="flex-1 flex flex-col gap-3">
                     <h3 className="text-lg font-semibold text-slate-900 line-clamp-2 group-hover:text-[#69C0DC] transition-colors leading-tight">
                       {article.title}
@@ -413,7 +413,7 @@ export default function ArticlesPage() {
                     </span>
                   </div>
                 </CardContent>
-                <div className="border-t border-gray-100 px-6 py-4 flex items-center gap-2 mt-auto bg-white">
+                <div className="border-t border-gray-100 px-4 sm:px-6 py-4 flex items-center gap-2 mt-auto bg-white">
                   <Link href={`/admin/articles/edit/${article.id}`} className="flex-1">
                     <Button variant="outline" size="sm" className="w-full rounded-2xl border-gray-200 hover:border-[#69C0DC] hover:text-[#69C0DC]">
                       <Edit className="h-4 w-4 mr-2" />
@@ -454,12 +454,12 @@ export default function ArticlesPage() {
         {/* Empty State */}
         {!isLoading && articles.length === 0 && (
           <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
-            <CardContent className="p-16 text-center">
-              <div className="w-20 h-20 mx-auto mb-6 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                <FileText className="h-10 w-10 text-gray-400" />
+            <CardContent className="p-8 sm:p-16 text-center">
+              <div className="w-16 sm:w-20 h-16 sm:h-20 mx-auto mb-4 sm:mb-6 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                <FileText className="h-8 sm:h-10 w-8 sm:w-10 text-gray-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">No articles found</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2 sm:mb-3">No articles found</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-6 sm:mb-8 max-w-md mx-auto text-sm sm:text-base">
                 {searchTerm || statusFilter !== 'all' || tagFilter
                   ? 'No articles match your current filters. Try adjusting your search criteria.'
                   : 'Get started by creating your first article to share knowledge about e-waste and sustainability.'}
