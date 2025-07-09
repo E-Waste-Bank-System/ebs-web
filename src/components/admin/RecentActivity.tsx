@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import Link from 'next/link';
 
 interface ActivityItem {
@@ -68,13 +68,14 @@ export function RecentActivity({ activities, isLoading, viewAllHref }: RecentAct
           <ul className="divide-y divide-gray-100 dark:divide-gray-700">
             {activities.map((item) => (
               <li key={item.id} className="flex items-center py-3 space-x-3">
-                {item.user.avatar_url ? (
-                  <Avatar src={item.user.avatar_url} alt={item.user.name} className="h-10 w-10" />
-                ) : (
-                  <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center font-semibold text-slate-500 text-base">
+                <Avatar className="h-10 w-10">
+                  {item.user.avatar_url ? (
+                    <AvatarImage src={item.user.avatar_url} alt={item.user.name} />
+                  ) : null}
+                  <AvatarFallback>
                     {getInitials(item.user.name, item.user.email)}
-                  </div>
-                )}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-gray-900 dark:text-white truncate">{item.user.name || item.user.email || 'Unknown User'}</div>
                   <div className="text-xs text-gray-500 truncate">{item.description}</div>
