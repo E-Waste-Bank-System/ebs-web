@@ -156,8 +156,8 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your e-waste system.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Dashboard</h1>
+          <p className="text-slate-600 text-sm">Welcome back! Here's what's happening with your e-waste management system.</p>
         </div>
         {/* Removed filter dropdown and Export Report button as requested */}
       </div>
@@ -365,7 +365,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Recent Activity & System Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-stretch">
         <div className="lg:col-span-2">
           <RecentActivity
             activities={(recentActivity?.recent_scans || []).map((item: any) => ({
@@ -383,7 +383,7 @@ export default function AdminDashboard() {
             viewAllHref="/admin/e-waste"
           />
         </div>
-        <div>
+        <div className="h-full">
           <SystemOverview
             metrics={[
               {
@@ -400,12 +400,7 @@ export default function AdminDashboard() {
                 label: 'Total Objects',
                 value: dashboardStats?.total_objects ?? 0,
                 description: 'All detected items',
-              },
-              {
-                label: 'System Status',
-                value: 'Online',
-                status: 'online',
-              },
+              }
             ]}
             isLoading={statsLoading}
           />

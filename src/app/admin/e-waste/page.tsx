@@ -146,7 +146,7 @@ function ModernStatCard({
         <div className="flex items-center justify-between">
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatStatValue(value)}</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatStatValue(value)}</p>
             <p className="text-xs text-gray-500 dark:text-gray-500">{subtitle}</p>
           </div>
           <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
@@ -534,8 +534,8 @@ export default function EWastePage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 sm:mb-8 pt-4 sm:pt-8">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-1">E-Waste Management</h1>
-            <p className="text-sm sm:text-base text-slate-500">Monitor and manage e-waste scans and detected objects.</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mb-1">E-Waste Management</h1>
+            <p className="text-xs sm:text-sm text-slate-500">Monitor and manage e-waste scans and detected objects.</p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <Button 
@@ -589,7 +589,12 @@ export default function EWastePage() {
           />
           <ModernStatCard
             title="Validation Rate"
-            value={`${dashboardStatsResponse?.validation_rate || 0}%`}
+            value={(() => {
+              const rate = dashboardStatsResponse?.validation_rate;
+              if (!rate) return '0.0%';
+              const numRate = parseFloat(String(rate));
+              return `${numRate.toFixed(1)}%`;
+            })()}
             subtitle="System accuracy"
             icon={Target}
             color="from-orange-500 to-orange-600"
@@ -597,39 +602,7 @@ export default function EWastePage() {
           />
         </div>
 
-        {/* Filters Row */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex-1 flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="relative w-full sm:max-w-xs">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
-                <Input
-                  placeholder="Search scans..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-10 rounded-2xl border-gray-200 h-12"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={v => setStatusFilter(v)}>
-                <SelectTrigger className="w-full sm:w-40 rounded-2xl border-gray-200 h-12">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent className="rounded-2xl">
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="processing">Processing</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="Category filter..."
-                value={searchTerm} // This seems like a bug, should be categoryFilter
-                onChange={e => setSearchTerm(e.target.value)} // This seems like a bug, should be setCategoryFilter
-                className="rounded-2xl border-gray-200 w-full sm:max-w-xs h-12"
-              />
-            </div>
-          </div>
-        </div>
+
 
         {/* Scans Grid */}
         {scansLoading ? (
@@ -649,20 +622,18 @@ export default function EWastePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-8 mt-0">
             {filteredScans.map((scan) => (
               <Card key={scan.id} className="h-full flex flex-col rounded-2xl border border-slate-100 shadow-xl bg-white overflow-hidden hover:shadow-2xl transition-all duration-300">
-                <div className="relative">
-                  <div className="aspect-video bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center rounded-t-2xl">
-                    {scan.image_url ? (
-                      <img 
-                        src={scan.image_url} 
-                        alt={`Scan ${scan.id}`}
-                        className="w-full h-full object-cover rounded-t-2xl"
-                      />
-                    ) : (
-                      <div className="bg-gradient-to-br from-[#69C0DC]/10 to-[#5BA8C4]/10 w-full h-full flex items-center justify-center rounded-t-2xl">
-                        <Camera className="h-12 w-12 text-[#69C0DC]/40" />
-                      </div>
-                    )}
-                  </div>
+                <div className="relative aspect-video">
+                  {scan.image_url ? (
+                    <img 
+                      src={scan.image_url} 
+                      alt={`Scan ${scan.id}`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="bg-gradient-to-br from-[#69C0DC]/10 to-[#5BA8C4]/10 w-full h-full flex items-center justify-center">
+                      <Camera className="h-12 w-12 text-[#69C0DC]/40" />
+                    </div>
+                  )}
                   <Badge className={`absolute top-4 left-4 rounded-full px-3 py-1 shadow-lg bg-white/90 ${getStatusColor(scan.status)} font-medium text-xs flex items-center gap-1 z-10`}>
                     {getStatusIcon(scan.status)}
                     <span className="capitalize">{scan.status}</span>
@@ -671,7 +642,7 @@ export default function EWastePage() {
                 <CardContent className="flex flex-col flex-1 px-4 sm:px-6 pt-4 sm:pt-6 pb-0 gap-4">
                   <div className="flex-1 flex flex-col gap-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-slate-900 line-clamp-2 group-hover:text-[#69C0DC] transition-colors leading-tight">
+                      <h3 className="text-base font-semibold text-slate-900 line-clamp-2 group-hover:text-[#69C0DC] transition-colors leading-tight">
                         Scan #{scan.id.substring(0, 8)}
                       </h3>
                       <span className="text-xs text-slate-400 bg-slate-100 px-2 py-1 rounded-full">
@@ -679,11 +650,11 @@ export default function EWastePage() {
                       </span>
                     </div>
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <div className="flex items-center gap-2 text-xs text-slate-600">
                         <User className="h-4 w-4" />
                         <span>{scan.user?.full_name || 'Anonymous'}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <div className="flex items-center gap-2 text-xs text-slate-600">
                         <Calendar className="h-4 w-4" />
                         <span>{format(new Date(scan.created_at), 'MMM dd, yyyy')}</span>
                       </div>

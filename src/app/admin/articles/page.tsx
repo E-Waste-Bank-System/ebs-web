@@ -87,7 +87,7 @@ function StatCard({
           <div className="space-y-2">
             <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{title}</p>
             <div className="flex items-baseline space-x-2">
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
               {trend && (
                 <span className="text-sm font-medium text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full">
                   {trend}
@@ -235,8 +235,8 @@ export default function ArticlesPage() {
             </div>
           )}
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-1">Content Management</h1>
-            <p className="text-sm sm:text-base text-slate-500">Create, manage, and publish articles about e-waste and sustainability.</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mb-1">Content Management</h1>
+            <p className="text-xs sm:text-sm text-slate-500">Create, manage, and publish articles about e-waste and sustainability.</p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
             <Button 
@@ -366,11 +366,11 @@ export default function ArticlesPage() {
                 </div>
                 <CardContent className="flex flex-col flex-1 px-4 sm:px-6 pt-4 sm:pt-6 pb-0 gap-4">
                   <div className="flex-1 flex flex-col gap-3">
-                    <h3 className="text-lg font-semibold text-slate-900 line-clamp-2 group-hover:text-[#69C0DC] transition-colors leading-tight">
+                    <h3 className="text-base font-semibold text-slate-900 line-clamp-2 group-hover:text-[#69C0DC] transition-colors leading-tight">
                       {article.title}
                     </h3>
                     {article.excerpt && (
-                      <p className="text-sm text-slate-600 line-clamp-3 leading-relaxed mb-2">{article.excerpt}</p>
+                      <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed mb-2">{article.excerpt}</p>
                     )}
                     {article.tags && article.tags.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2 mb-1">

@@ -80,11 +80,11 @@ export default function LoginPage() {
         {/* Main Content */}
         <div className="space-y-4 sm:space-y-6 z-10">
           <div className="space-y-3 sm:space-y-4">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight">
               Mulai Kelola <span className="italic">e-waste</span><br />
               dengan efisien.
             </h2>
-            <p className="text-sm sm:text-base lg:text-lg opacity-90 max-w-md">
+            <p className="text-xl sm:text-base lg:text-lg opacity-90 max-w-md">
               Akses dashboard admin untuk memantau data pengguna dan mengoptimalkan pengelolaan sampah elektronik secara cerdas.
             </p>
           </div>
@@ -108,8 +108,12 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-6 sm:space-y-8">
           {/* Welcome Text */}
           <div className="text-center space-y-2">
-            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900">Selamat datang!</h3>
-            <p className="text-sm sm:text-base text-gray-600">Masuk untuk kelola e-waste dengan efisien!</p>
+            <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-2">
+              Welcome to EBS Admin
+            </h3>
+            <p className="text-sm text-gray-600 text-center mb-8">
+              Please sign in to your account
+            </p>
           </div>
 
           {/* Error Alert */}

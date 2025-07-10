@@ -116,7 +116,7 @@ function ObjectDetailCard({ object, onUpdate }: ObjectDetailCardProps) {
                     <Bot className="h-5 w-5 text-[#69C0DC]" />
                 </div>
                 <div>
-                    <CardTitle className="text-lg font-semibold text-slate-800">{object.name}</CardTitle>
+                    <CardTitle className="text-base font-semibold text-slate-800">{object.name}</CardTitle>
                     <CardDescription>Category: {object.category}</CardDescription>
                 </div>
             </div>
@@ -153,21 +153,21 @@ function ObjectDetailCard({ object, onUpdate }: ObjectDetailCardProps) {
 
         {object.description && (
              <div className="bg-slate-50 p-3 rounded-lg">
-                 <h4 className="font-semibold text-sm mb-2 flex items-center gap-2 text-slate-700">
+                 <h4 className="font-semibold text-xs mb-2 flex items-center gap-2 text-slate-700">
                     <MessageSquare className="h-4 w-4 text-[#69C0DC]" />
                     AI Description
                 </h4>
-                <p className="text-sm text-slate-600">{object.description}</p>
+                <p className="text-xs text-slate-600">{object.description}</p>
             </div>
         )}
 
         {object.suggestions && object.suggestions.length > 0 && (
              <div className="bg-slate-50 p-3 rounded-lg">
-                <h4 className="font-semibold text-sm mb-2 flex items-center gap-2 text-slate-700">
+                <h4 className="font-semibold text-xs mb-2 flex items-center gap-2 text-slate-700">
                     <Lightbulb className="h-4 w-4 text-[#69C0DC]" />
                     AI Suggestions
                 </h4>
-                <ul className="space-y-1 text-sm text-slate-600 list-disc list-inside">
+                <ul className="space-y-1 text-xs text-slate-600 list-disc list-inside">
                     {object.suggestions.map((suggestion, index) => (
                         <li key={index}>{suggestion}</li>
                     ))}
@@ -240,10 +240,10 @@ function ObjectDetailCard({ object, onUpdate }: ObjectDetailCardProps) {
             <div>
                  {object.validation_notes && (
                      <div className="bg-slate-50 p-3 rounded-lg border">
-                         <h4 className="font-semibold text-sm mb-2 flex items-center gap-2 text-slate-700">
+                         <h4 className="font-semibold text-xs mb-2 flex items-center gap-2 text-slate-700">
                             Validation Notes
                         </h4>
-                        <p className="text-sm text-slate-600">{object.validation_notes}</p>
+                        <p className="text-xs text-slate-600">{object.validation_notes}</p>
                      </div>
                  )}
                  {!object.is_validated && (
@@ -513,18 +513,18 @@ export default function ScanDetailsPage() {
   const validatedObjects = detectedObjects.filter(o => o.is_validated);
 
   return (
-    <div className="min-h-screen bg-white pb-12">
+    <div className="min-h-screen bg-white pb-12 -m-8">
       <div className="sticky top-0 z-30 bg-white border-b border-slate-100 flex items-center justify-between px-4 sm:px-8 py-4 shadow-sm">
         <div className="flex items-center gap-4">
           <Button variant="outline" size="icon" onClick={() => router.push('/admin/e-waste')} className="rounded-xl">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-3">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-3">
               Scan Details
               {getStatusBadge(scan.status)}
             </h1>
-            <p className="text-slate-500 mt-1 text-sm">Analysis for scan <span className="font-mono bg-slate-100 px-2 py-0.5 rounded">#{scan.id.substring(0, 8)}</span></p>
+            <p className="text-slate-500 mt-1 text-xs">Analysis for scan <span className="font-mono bg-slate-100 px-2 py-0.5 rounded">#{scan.id.substring(0, 8)}</span></p>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -540,17 +540,17 @@ export default function ScanDetailsPage() {
         </div>
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 flex flex-col items-center">
           <Cpu className="h-5 w-5 text-green-500 mb-1" />
-          <div className="text-lg font-bold text-slate-800">{scan.objects_count}</div>
+          <div className="text-base font-bold text-slate-800">{scan.objects_count}</div>
           <div className="text-xs text-slate-500 mt-1">Objects</div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 flex flex-col items-center">
           <DollarSign className="h-5 w-5 text-purple-500 mb-1" />
-          <div className="text-lg font-bold text-slate-800">{formatRupiah(Number(scan.total_estimated_value) || 0)}</div>
+          <div className="text-base font-bold text-slate-800">{formatRupiah(Number(scan.total_estimated_value) || 0)}</div>
           <div className="text-xs text-slate-500 mt-1">Total Value</div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-4 flex flex-col items-center">
           <CheckCircle className="h-5 w-5 text-orange-500 mb-1" />
-          <div className="text-lg font-bold text-slate-800">{validatedObjects.length} / {detectedObjects.length}</div>
+          <div className="text-base font-bold text-slate-800">{validatedObjects.length} / {detectedObjects.length}</div>
           <div className="text-xs text-slate-500 mt-1">Validated</div>
         </div>
       </div>
@@ -569,7 +569,7 @@ export default function ScanDetailsPage() {
                 />
               </div>
               <div className="flex-1 border-t lg:border-t-0 lg:border-l border-slate-100 p-4 flex flex-col justify-center gap-3">
-                <div className="flex items-center gap-2 text-slate-500 text-sm font-semibold mb-2"><FileText className="h-4 w-4" />Scan Information</div>
+                <div className="flex items-center gap-2 text-slate-500 text-xs font-semibold mb-2"><FileText className="h-4 w-4" />Scan Information</div>
                 <div className="flex items-center gap-2"><span className="text-slate-400"><FileText className="h-4 w-4" /></span> <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-1 rounded">#{scan.id}</span></div>
                 <div className="flex items-center gap-2"><User className="h-4 w-4 text-slate-400" /> <span className="font-medium text-slate-800">{scan.user?.full_name || 'Anonymous'}</span></div>
                 <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-slate-400" /> <span className="font-medium text-slate-800">{format(new Date(scan.created_at), 'MMM dd, yyyy')}</span></div>

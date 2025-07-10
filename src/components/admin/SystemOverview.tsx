@@ -20,12 +20,12 @@ function formatCompactNumber(value: number): string {
 
 export function SystemOverview({ metrics, isLoading }: SystemOverviewProps) {
   return (
-    <Card className="rounded-2xl border-0 shadow-sm bg-white dark:bg-gray-800">
-      <CardHeader className="pb-2">
+    <Card className="rounded-2xl border-0 shadow-sm bg-white dark:bg-gray-800 h-full flex flex-col">
+      <CardHeader className="pb-2 flex-shrink-0">
         <CardTitle className="text-lg font-bold text-gray-900 dark:text-white">System Overview</CardTitle>
         <p className="text-gray-500 text-sm mt-1">Current system status and metrics</p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 flex-1 flex flex-col justify-center">
         {isLoading ? (
           <div className="space-y-4">
             {[...Array(4)].map((_, i) => (

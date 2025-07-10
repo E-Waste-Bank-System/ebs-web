@@ -184,10 +184,8 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">User Management</h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
-            Oversee user accounts, manage permissions, and monitor activity.
-          </p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight mb-1">User Management</h1>
+          <p className="text-xs sm:text-sm text-slate-500">Manage user accounts, permissions, and system access.</p>
         </div>
         <div className="flex items-center space-x-3">
           <Button 

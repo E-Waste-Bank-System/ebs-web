@@ -151,7 +151,7 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
                 <Image src="/logo.svg" alt="EBS Logo" width={40} height={40} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">EBS Admin</h1>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">EBS Admin</h1>
                 <p className="text-xs text-gray-500 dark:text-gray-400">E-Waste Bank System</p>
               </div>
             </div>
@@ -169,7 +169,7 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
                     isActive
                       ? 'bg-gradient-to-r from-[#69C0DC] to-[#5BA8C4] text-white shadow-lg transform scale-[1.02]'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-white',
-                    'group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200'
+                    'group flex items-center px-4 py-3 text-xs font-medium rounded-xl transition-all duration-200'
                   )}
                 >
                   <item.icon
@@ -197,7 +197,7 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
                   {profile?.full_name || 'Admin User'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
@@ -250,17 +250,6 @@ export default function AdminLayoutPage({ children }: { children: React.ReactNod
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
-            {/* Search bar full width on mobile */}
-            <div className="flex-1 max-w-lg mx-0 sm:mx-4 w-full">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
-                <input
-                  type="text"
-                  placeholder="Search anything..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:bg-white dark:focus:bg-gray-600 focus:border-[#69C0DC] focus:ring-2 focus:ring-[#69C0DC]/20 transition-all duration-200"
-                />
-              </div>
             </div>
             {/* Theme toggle and user menu hidden on mobile, shown on desktop */}
             <div className="hidden sm:flex items-center space-x-4">

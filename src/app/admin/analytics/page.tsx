@@ -60,6 +60,24 @@ import {
 import React from 'react';
 import { saveAs } from 'file-saver';
 
+// Helper to format numbers compactly (e.g., 1.5K, 2.3M)
+function formatCompactNumber(value: number): string {
+  return new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
+
+// Helper to format value for stat cards (number or currency)
+function formatStatValue(value: string | number): string {
+  if (typeof value === 'number') {
+    return formatCompactNumber(value);
+  } else if (typeof value === 'string' && value.startsWith('Rp')) {
+    const num = parseInt(value.replace(/[^\d]/g, ''));
+    if (!isNaN(num) && num >= 1000) {
+      return `Rp ${formatCompactNumber(num)}`;
+    }
+  }
+  return value as string;
+}
+
 // Define the type for category entries at the top level
 interface CategoryEntry {
   name: string;
@@ -109,13 +127,13 @@ function MetricCard({
   }
 
   return (
-    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800 e">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-600 dark:text-white">{title}</p>
-            <div className="flex items-baseline space-x-2">
-              <p className="text-3xl font-bold text-slate-900 dark:text-white">{value}</p>
+    <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-white dark:bg-gray-800">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-2 flex-1 min-w-0">
+            <p className="text-xs font-medium text-slate-600 dark:text-white">{title}</p>
+            <div className="flex flex-col sm:flex-row sm:items-baseline space-y-1 sm:space-y-0 sm:space-x-2">
+              <p className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white break-words">{value}</p>
               {change && (
                 <div className="flex items-center space-x-1">
                   {changeType === 'increase' ? (
@@ -133,7 +151,7 @@ function MetricCard({
             </div>
             {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
           </div>
-          <div className={`p-3 rounded-xl bg-gradient-to-br ${color}`}>
+          <div className={`p-3 rounded-xl bg-gradient-to-br ${color} flex-shrink-0`}>
             <Icon className="h-6 w-6 text-white" />
           </div>
         </div>
@@ -157,7 +175,7 @@ function ChartCard({
   return (
     <Card className="border-0 shadow-sm bg-white dark:bg-gray-800">
       <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">{title}</CardTitle>
+        <CardTitle className="text-lg font-bold text-gray-900 dark:text-white">{title}</CardTitle>
         {description && <CardDescription className="dark:text-gray-400">{description}</CardDescription>}
       </CardHeader>
       <CardContent>
@@ -173,10 +191,18 @@ function ChartCard({
   );
 }
 
-// Format currency as Rupiah
+// Format currency as Rupiah with shorter format for large numbers
 const formatRupiah = (amount: number) => {
   // Handle NaN, null, undefined, or invalid numbers
   const validAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  
+  // For display in cards, use shorter format for large numbers
+  if (validAmount >= 1000000) {
+    return `Rp ${(validAmount / 1000000).toFixed(1)}M`;
+  } else if (validAmount >= 1000) {
+    return `Rp ${(validAmount / 1000).toFixed(0)}K`;
+  }
+  
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
     currency: 'IDR',
@@ -256,6 +282,8 @@ export default function AnalyticsPage() {
   // Debug logging
   console.log('Analytics Debug - Dashboard stats:', dashboardStats);
   console.log('Analytics Debug - Total value IDR:', totalValue);
+  console.log('Analytics Debug - Validation rate raw:', dashboardStats?.validation_rate);
+  console.log('Analytics Debug - Validation rate formatted:', dashboardStats?.validation_rate ? Math.round(Number(dashboardStats.validation_rate)) : 0);
 
   // Category breakdown from real data
   const categoryColors = [
@@ -308,8 +336,8 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Analytics</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm sm:text-base">Comprehensive insights into your e-waste management system performance.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Analytics</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2 text-xs sm:text-sm">Comprehensive insights into your e-waste management system performance.</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
           <Select value={timeRange} onValueChange={setTimeRange}>
@@ -338,7 +366,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <MetricCard
           title="Total Scans"
-          value={dashboardStats?.total_scans || 0}
+          value={formatStatValue(dashboardStats?.total_scans || 0)}
           icon={Recycle}
           color="from-[#69C0DC] to-[#5BA8C4]"
           subtitle="All submissions"
@@ -346,7 +374,7 @@ export default function AnalyticsPage() {
         />
         <MetricCard
           title="Active Users"
-          value={profiles.filter(p => p.is_active).length}
+          value={formatStatValue(profiles.filter(p => p.is_active).length)}
           icon={Users}
           color="from-green-500 to-green-600"
           subtitle="Currently active"
@@ -354,7 +382,7 @@ export default function AnalyticsPage() {
         />
         <MetricCard
           title="Total Value"
-          value={formatRupiah(totalValue)}
+          value={formatStatValue(formatRupiah(totalValue))}
           icon={DollarSign}
           color="from-purple-500 to-purple-600"
           subtitle="Estimated worth"
@@ -362,7 +390,12 @@ export default function AnalyticsPage() {
         />
         <MetricCard
           title="Validation Rate"
-          value={dashboardStats?.validation_rate ? `${Math.round(dashboardStats.validation_rate)}%` : '0%'}
+          value={(() => {
+            const rate = dashboardStats?.validation_rate;
+            if (!rate) return '0.0%';
+            const numRate = parseFloat(String(rate));
+            return `${numRate.toFixed(1)}%`;
+          })()}
           icon={Target}
           color="from-orange-500 to-orange-600"
           subtitle="System accuracy"

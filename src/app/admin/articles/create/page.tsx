@@ -122,8 +122,8 @@ export default function CreateArticlePage() {
             <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="space-y-1">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Create New Article</h1>
-            <p className="text-slate-500 text-sm sm:text-base">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Create New Article</h1>
+            <p className="text-slate-500 text-xs sm:text-sm">
                 Write and publish a new article for your readers
             </p>
             </div>
@@ -153,14 +153,14 @@ export default function CreateArticlePage() {
             <div className="lg:col-span-2 space-y-6">
                 <Card className="bg-white rounded-xl border-0 shadow-sm">
                     <CardHeader className="pb-4 sm:pb-6">
-                        <CardTitle className="flex items-center text-slate-800 text-lg sm:text-xl">
+                        <CardTitle className="flex items-center text-slate-800 text-base sm:text-lg">
                             <FileText className="mr-3 h-5 w-5 text-[#69C0DC]" />
                             Article Content
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 sm:space-y-6">
                         <div className="space-y-2">
-                            <Label htmlFor="title" className="text-sm font-medium text-slate-700">Title</Label>
+                            <Label htmlFor="title" className="text-xs font-medium text-slate-700">Title</Label>
                             <Input
                                 id="title"
                                 value={title}
@@ -171,7 +171,7 @@ export default function CreateArticlePage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="excerpt" className="text-sm font-medium text-slate-700">Excerpt</Label>
+                            <Label htmlFor="excerpt" className="text-xs font-medium text-slate-700">Excerpt</Label>
                             <Input
                                 id="excerpt"
                                 value={excerpt}
@@ -181,7 +181,7 @@ export default function CreateArticlePage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="tags" className="text-sm font-medium text-slate-700">Tags</Label>
+                            <Label htmlFor="tags" className="text-xs font-medium text-slate-700">Tags</Label>
                             <Input
                                 id="tags"
                                 value={tags}
@@ -191,7 +191,7 @@ export default function CreateArticlePage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="meta-title" className="text-sm font-medium text-slate-700">SEO Meta Title</Label>
+                            <Label htmlFor="meta-title" className="text-xs font-medium text-slate-700">SEO Meta Title</Label>
                             <Input
                                 id="meta-title"
                                 value={metaTitle}
@@ -201,7 +201,7 @@ export default function CreateArticlePage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="meta-description" className="text-sm font-medium text-slate-700">SEO Meta Description</Label>
+                            <Label htmlFor="meta-description" className="text-xs font-medium text-slate-700">SEO Meta Description</Label>
                             <Input
                                 id="meta-description"
                                 value={metaDescription}
@@ -211,7 +211,7 @@ export default function CreateArticlePage() {
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label className="text-sm font-medium text-slate-700">Featured Image</Label>
+                            <Label className="text-xs font-medium text-slate-700">Featured Image</Label>
                             <div className="space-y-4">
                                 <div className="relative aspect-video rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center overflow-hidden">
                                     {imagePreview ? (
@@ -219,7 +219,7 @@ export default function CreateArticlePage() {
                                     ) : (
                                         <div className="text-center text-slate-500">
                                             <Upload className="mx-auto h-8 w-8 mb-2" />
-                                            <p className="text-sm font-medium">Upload an image</p>
+                                            <p className="text-xs font-medium">Upload an image</p>
                                             <p className="text-xs text-slate-400 mt-1">PNG, JPG up to 10MB</p>
                                         </div>
                                     )}
@@ -234,7 +234,7 @@ export default function CreateArticlePage() {
                             </div>
                         </div>
                         <div className="space-y-3">
-                            <Label className="text-sm font-medium text-slate-700">Content</Label>
+                            <Label className="text-xs font-medium text-slate-700">Content</Label>
                             <div className="border border-gray-200 rounded-xl overflow-hidden">
                                 <Editor
                                     data={content}
@@ -250,14 +250,14 @@ export default function CreateArticlePage() {
             <div className="lg:col-span-1 space-y-6">
                 <Card className="bg-white rounded-xl border-0 shadow-sm">
                     <CardHeader className="pb-4 sm:pb-6">
-                        <CardTitle className="flex items-center text-slate-800 text-lg sm:text-xl">
+                        <CardTitle className="flex items-center text-slate-800 text-base sm:text-lg">
                             <CheckCircle className="mr-3 h-5 w-5 text-[#69C0DC]" />
                             Publish Settings
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="publish-status" className="text-sm font-medium text-slate-700">Status</Label>
+                            <Label htmlFor="publish-status" className="text-xs font-medium text-slate-700">Status</Label>
                             <Select value={status} onValueChange={(value: ArticleStatus) => setStatus(value)}>
                               <SelectTrigger id="publish-status" className="w-full rounded-xl border-gray-200">
                                 <SelectValue placeholder="Select status" />
@@ -289,11 +289,11 @@ export default function CreateArticlePage() {
                 {/* Mobile Preview */}
                 <Card className="bg-white rounded-xl border-0 shadow-sm">
                     <CardHeader className="pb-4 sm:pb-6">
-                        <CardTitle className="flex items-center text-slate-800 text-lg sm:text-xl">
+                        <CardTitle className="flex items-center text-slate-800 text-base sm:text-lg">
                             <span className="mr-3 text-lg">📱</span>
                             Mobile Preview
                         </CardTitle>
-                        <p className="text-sm text-slate-600">
+                        <p className="text-xs text-slate-600">
                             See how your article will appear in the mobile app
                         </p>
                     </CardHeader>

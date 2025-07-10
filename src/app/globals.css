@@ -120,6 +120,87 @@
   }
 }
 
+/* Editor.js custom styles with reduced font sizes */
+.ce-block__content,
+.ce-toolbar__content {
+  max-width: 100% !important;
+  font-size: 14px; /* Reduced from default */
+}
+
+.ce-block {
+  padding: 0.25rem 0 !important;
+  font-size: 14px; /* Reduced from default */
+}
+
+.ce-paragraph {
+  font-size: 14px !important; /* Reduced from 16px */
+  line-height: 1.6 !important;
+  margin: 0 !important;
+}
+
+.ce-header {
+  font-weight: 600 !important;
+  margin: 0.5rem 0 !important;
+}
+
+.ce-header[data-level="1"] {
+  font-size: 20px !important; /* Reduced from 24px */
+}
+
+.ce-header[data-level="2"] {
+  font-size: 18px !important; /* Reduced from 20px */
+}
+
+.ce-header[data-level="3"] {
+  font-size: 16px !important; /* Reduced from 18px */
+}
+
+/* Base font size adjustments */
+html {
+  font-size: 14px; /* Reduced from default 16px */
+}
+
+body {
+  font-size: 0.875rem; /* 14px */
+  line-height: 1.5;
+}
+
+/* Component-specific size adjustments */
+.text-sm {
+  font-size: 0.75rem !important; /* 12px instead of 14px */
+  line-height: 1rem !important;
+}
+
+.text-base {
+  font-size: 0.875rem !important; /* 14px instead of 16px */
+  line-height: 1.25rem !important;
+}
+
+.text-lg {
+  font-size: 1rem !important; /* 16px instead of 18px */
+  line-height: 1.5rem !important;
+}
+
+.text-xl {
+  font-size: 1.125rem !important; /* 18px instead of 20px */
+  line-height: 1.75rem !important;
+}
+
+.text-2xl {
+  font-size: 1.25rem !important; /* 20px instead of 24px */
+  line-height: 1.75rem !important;
+}
+
+.text-3xl {
+  font-size: 1.5rem !important; /* 24px instead of 30px */
+  line-height: 2rem !important;
+}
+
+.text-4xl {
+  font-size: 1.75rem !important; /* 28px instead of 36px */
+  line-height: 2.25rem !important;
+}
+
 /* EditorJS Custom Styles */
 .ce-block__content,
 .ce-toolbar__content {
