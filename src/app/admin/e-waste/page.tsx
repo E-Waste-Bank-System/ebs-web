@@ -710,6 +710,69 @@ export default function EWastePage() {
           </div>
         )}
 
+        {/* Pagination */}
+        {!scansLoading && filteredScans.length > 0 && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-8">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={!hasPrevPage}
+              className="rounded-lg"
+            >
+              Previous
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {/* Show page numbers */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                // Only show current page, first page, last page, and pages around current
+                const shouldShow = 
+                  page === 1 || 
+                  page === totalPages || 
+                  (page >= currentPage - 1 && page <= currentPage + 1);
+                
+                if (!shouldShow) {
+                  // Show ellipsis for gaps
+                  if (page === 2 && currentPage > 3) {
+                    return <span key={page} className="px-2 text-gray-400">...</span>;
+                  }
+                  if (page === totalPages - 1 && currentPage < totalPages - 2) {
+                    return <span key={page} className="px-2 text-gray-400">...</span>;
+                  }
+                  return null;
+                }
+                
+                return (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className={`rounded-lg min-w-[40px] ${
+                      currentPage === page 
+                        ? 'bg-[#69C0DC] hover:bg-[#5BA8C4]' 
+                        : 'border-gray-200 hover:border-[#69C0DC]'
+                    }`}
+                  >
+                    {page}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={!hasNextPage}
+              className="rounded-lg"
+            >
+              Next
+            </Button>
+          </div>
+        )}
+
         {/* Empty State */}
         {!scansLoading && filteredScans.length === 0 && (
           <Card className="border-0 shadow-lg bg-white dark:bg-gray-800">
