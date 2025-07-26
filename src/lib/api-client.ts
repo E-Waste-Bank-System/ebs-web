@@ -313,7 +313,7 @@ class ApiClient {
   }
 
   async syncUsers() {
-    return this.request<void>('/auth/sync-users', {
+    return this.request<void>('/auth/sync', {
       method: 'POST',
       body: JSON.stringify({}),
     });

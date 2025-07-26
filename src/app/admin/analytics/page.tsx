@@ -405,9 +405,9 @@ export default function AnalyticsPage() {
 
       {/* Main Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        {/* Monthly E-Waste Breakdown (Bar Chart) */}
+        {/* Total E-Waste Breakdown (Bar Chart) */}
         <ChartCard
-          title="Monthly E-Waste Breakdown"
+          title="Total E-Waste Breakdown"
           description="Breakdown of detected items by category for the selected month"
           isLoading={objectStatsLoading}
         >
